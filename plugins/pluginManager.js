@@ -331,7 +331,7 @@ var pluginManager = function pluginManager() {
     * @param {object} db -database connection for countly db
     * @param {string} appId - id of application
     * @param {string} namespace - name of plugin
-    * @param {object} config  - new configuration object for selected plugin 
+    * @param {object} config  - new configuration object for selected plugin
     * @param {function} callback - function that is called when updating has finished
     **/
     this.updateApplicationConfigs = function(db, appId, namespace, config, callback) {
@@ -860,7 +860,9 @@ var pluginManager = function pluginManager() {
             }
         }).then(function(result) {
             var scriptPath = path.join(__dirname, plugin, 'install.js');
-            var m = cp.spawn("nodejs", [scriptPath]);
+            // var m = cp.spawn("nodejs", [scriptPath]);
+            ///TODO MAC 为node
+            var m = cp.spawn("node", [scriptPath]);
 
             m.stdout.on('data', (data) => {
                 console.log(data.toString());

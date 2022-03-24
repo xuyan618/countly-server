@@ -335,7 +335,14 @@ var plugin = {},
         switch (state) {
         case 'start':
             common.db.collection('plugins').remove({"_id": "failed"}, function() {});
-            common.db.collection('plugins').insert({"_id": "busy"}, function() {});
+            common.db.collection('plugins').count({"_id": "busy"}, function(busyErr, count) {
+                if (!busyErr && count == 0) {
+                    common.db.collection('plugins').insert({"_id": "busy"}, function() {});
+                }
+                else {
+                    console.log("busy has exist");
+                }
+            });
             break;
         case 'failed':
             common.db.collection('plugins').remove({"_id": "busy"}, function() {});

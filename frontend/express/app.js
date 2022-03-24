@@ -91,10 +91,10 @@ if (!countlyConfig.cookie) {
 }
 
 plugins.setConfigs("frontend", {
-    production: true,
+    production: false,
     theme: countlyConfig.web.theme || "",
     session_timeout: 30,
-    use_google: true,
+    use_google: false,
     code: true,
     google_maps_api_key: "",
     offline_mode: false
