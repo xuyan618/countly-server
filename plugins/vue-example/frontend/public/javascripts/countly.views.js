@@ -193,7 +193,7 @@ var TimeGraphView = countlyVue.views.BaseView.extend({
         return {
             paths: [{
                 "label": "Previous Period",
-                "color": "#DDDDDD",
+                "color": "#aa0e0e",
                 "mode": "ghost"
             }, {
                 "label": "Total Sessions",

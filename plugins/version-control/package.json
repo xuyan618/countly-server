@@ -19,6 +19,8 @@
     "control"
   ],
   "cly_dependencies": {},
-  "dependencies": {},
+  "dependencies": {
+    "element-ui": "^2.15.6"
+  },
   "private": true
 }

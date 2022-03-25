@@ -1,170 +1,249 @@
-/* globals countlyCommon, jQuery, app */
-(function(countlyVersionControl, $) {
+/*global $, countlyCommon, _, countlyVue */
 
-    var _parameters = [],
-        _conditions = [];
+(function(countVersionControl) {
 
-    countlyVersionControl.initialize = function() {
-        return $.when(
-            $.ajax({
-                type: "GET",
-                url: countlyCommon.API_PARTS.data.r,
-                data: {
-                    "app_id": countlyCommon.ACTIVE_APP_ID,
-                    "method": "remote-config",
+    countVersionControl.factory = {
+        getEmpty: function(fields) {
+            fields = fields || {};
+            var original = {
+                _id: null,
+                name: '',
+                field1: '',
+                field2: '',
+                description: '',
+                status: false,
+                selectedProps: [],
+                visibility: 'private'
+            };
+            return _.extend(original, fields);
+        }
+    };
+
+    countVersionControl.getVuexModule = function() {
+
+        var getEmptyState = function() {
+            return {
+                graphPoints: [],
+                pieData: {
+                    "dp": [
+                        {"data": [[0, 20]], "label": "Test1", "color": "#52A3EF"},
+                        {"data": [[0, 10]], "label": "Test2", "color": "#FF8700"},
+                        {"data": [[0, 50]], "label": "Test3", "color": "#0EC1B9"}
+                    ]
                 },
-                dataType: "json",
-                success: function(data) {
-                    _parameters = data ? data.parameters || [] : [];
-                    _conditions = data ? data.conditions || [] : [];
+                lineData: {
+                    "dp": [
+                        {"data": [[-1, null], [0, 20], [1, 10], [2, 40], [3, null]], "label": "Value", "color": "#52A3EF"},
+                    ],
+                    "ticks": [[-1, ""], [0, "Test1"], [1, "Test2"], [2, "Test3"], [3, ""]]
+                },
+                barData: {
+                    "dp": [
+                        {"data": [[-1, null], [0, 20], [1, 10], [2, 40], [3, null]], "label": "Value", "color": "#52A3EF"},
+                    ],
+                    "ticks": [[-1, ""], [0, "Test1"], [1, "Test2"], [2, "Test3"], [3, ""]]
+                },
+                queryParams:{
+                    updateType:"",
+                    appVersion:"",
+                    versionStatus:"",
+
                 }
-            })
-        );
-    };
+            };
+        };
 
-    countlyVersionControl.createParameter = function(settings, callback) {
-        $.ajax({
-            type: "POST",
-            url: countlyCommon.API_PARTS.data.w + "/remote-config/add-parameter",
-            data: {
-                "app_id": countlyCommon.ACTIVE_APP_ID,
-                "parameter": JSON.stringify(settings)
+        var getters = {
+            pieData: function(state) {
+                return state.pieData;
             },
-            dataType: "json",
-            success: function() {
-                var hasConditions = settings && settings.conditions && Array.isArray(settings.conditions) && settings.conditions.length > 0;
-                app.recordEvent({
-                    "key": "remote-config-create",
-                    "count": 1,
-                    "segmentation": {has_conditions: hasConditions}
+            barData: function(state) {
+                return state.barData;
+            },
+            lineData: function(state) {
+                return state.lineData;
+            },
+            graphPoints: function(state) {
+                return state.graphPoints;
+            },
+            queryParams:function (state){
+                return state.queryParams;
+            }
+        };
+
+        var actions = {
+            initialize: function(context) {
+                context.dispatch("refresh");
+            },
+            refresh: function(context) {
+                context.dispatch("countlyVueExample/myRecords/fetchAll", null, {root: true});
+                context.dispatch("fetchGraphPoints");
+            },
+            fetchGraphPoints: function(context) {
+                return $.when($.ajax({
+                    type: "GET",
+                    url: countlyCommon.API_URL + "/o",
+                    data: {
+                        app_id: countlyCommon.ACTIVE_APP_ID,
+                        method: 'get-random-numbers'
+                    }
+                })).then(function(obj) {
+                    context.commit("setGraphPoints", [obj, obj.map(function(x) {
+                        return x / 2;
+                    })]);
                 });
-                return callback();
             }
-        });
-    };
+        };
 
-    countlyVersionControl.addCompleteConfig = function(settings, callback) {
-        $.ajax({
-            type: "POST",
-            url: countlyCommon.API_PARTS.data.w + "/remote-config/add-complete-config",
-            data: {
-                "app_id": countlyCommon.ACTIVE_APP_ID,
-                "config": JSON.stringify(settings)
+        var mutations = {
+            setGraphPoints: function(state, val) {
+                state.graphPoints = val;
+            }
+        };
+
+        // Paged Resource
+
+        var tooManyRecordsResource = countlyVue.vuex.Module("tooManyRecords", {
+            resetFn: function() {
+                return {
+                    paged: {
+                        rows: []
+                    },
+                    requestParams: {}
+                };
             },
-            dataType: "json",
-            success: function() {
-                return callback();
-            }
-        });
-    };
-
-    countlyVersionControl.removeParameter = function(parameterId, callback) {
-        $.ajax({
-            type: "POST",
-            url: countlyCommon.API_PARTS.data.w + "/remote-config/remove-parameter",
-            data: {
-                "app_id": countlyCommon.ACTIVE_APP_ID,
-                "parameter_id": parameterId
+            getters: {
+                paged: function(state) {
+                    return state.paged;
+                }
             },
-            dataType: "json",
-            success: function(res) {
-                callback(res);
-            }
-        });
-    };
-
-    countlyVersionControl.updateParameter = function(parameterId, settings, callback) {
-        $.ajax({
-            type: "POST",
-            url: countlyCommon.API_PARTS.data.w + "/remote-config/update-parameter",
-            data: {
-                "app_id": countlyCommon.ACTIVE_APP_ID,
-                "parameter_id": parameterId,
-                "parameter": JSON.stringify(settings)
+            mutations: {
+                setPaged: function(state, val) {
+                    state.paged = val;
+                },
+                setRequestParams: function(state, val) {
+                    state.requestParams = val;
+                }
             },
-            dataType: "json",
-            success: function(res) {
-                callback(res);
+            actions: {
+                fetchPaged: function(context) {
+                    return $.when($.ajax({
+                        type: "GET",
+                        url: countlyCommon.API_URL + "/o",
+                        data: {
+                            app_id: countlyCommon.ACTIVE_APP_ID,
+                            method: 'large-col',
+                            table_params: JSON.stringify(context.state.requestParams)
+                        }
+                    }))
+                        .then(function(res) {
+                            context.commit("setPaged", res);
+                        })
+                        .catch(function() {
+                            context.commit("setPaged", {
+                                rows: [],
+                                totalRows: 0,
+                                notFilteredTotalRows: 0
+                            });
+                        });
+                }
             }
         });
-    };
 
-    countlyVersionControl.returnParameters = function() {
-        return _parameters;
-    };
-
-    countlyVersionControl.getParameter = function(parameterId) {
-        var parameter = {};
-        for (var i = 0; i < _parameters.length; i++) {
-            if (_parameters[i]._id === parameterId) {
-                parameter = _parameters[i];
-                break;
-            }
-        }
-
-        return parameter;
-    };
-
-    countlyVersionControl.createCondition = function(settings, callback) {
-        $.ajax({
-            type: "POST",
-            url: countlyCommon.API_PARTS.data.w + "/remote-config/add-condition",
-            data: {
-                "app_id": countlyCommon.ACTIVE_APP_ID,
-                "condition": JSON.stringify(settings)
+        var recordsResource = countlyVue.vuex.Module("myRecords", {
+            resetFn: function() {
+                return {
+                    all: []
+                };
             },
-            dataType: "json",
-            success: function(res) {
-                return callback(res);
-            }
-        });
-    };
-
-    countlyVersionControl.removeCondition = function(conditionId, callback) {
-        $.ajax({
-            type: "POST",
-            url: countlyCommon.API_PARTS.data.w + "/remote-config/remove-condition",
-            data: {
-                "app_id": countlyCommon.ACTIVE_APP_ID,
-                "condition_id": conditionId
+            getters: {
+                all: function(state) {
+                    return state.all;
+                }
             },
-            dataType: "json",
-            success: function(res) {
-                callback(res);
-            }
-        });
-    };
-
-    countlyVersionControl.updateCondition = function(conditionId, settings, callback) {
-        $.ajax({
-            type: "POST",
-            url: countlyCommon.API_PARTS.data.w + "/remote-config/update-condition",
-            data: {
-                "app_id": countlyCommon.ACTIVE_APP_ID,
-                "condition_id": conditionId,
-                "condition": JSON.stringify(settings)
+            mutations: {
+                setAll: function(state, val) {
+                    state.all = val;
+                }
             },
-            dataType: "json",
-            success: function(res) {
-                callback(res);
+            actions: {
+                save: function(context, record) {
+                    return $.when($.ajax({
+                        type: "POST",
+                        url: countlyCommon.API_PARTS.data.w + "/vue_example/save",
+                        data: {
+                            "app_id": countlyCommon.ACTIVE_APP_ID,
+                            "record": JSON.stringify(record)
+                        },
+                        dataType: "json"
+                    }));
+                },
+                remove: function(context, id) {
+                    return $.when($.ajax({
+                        type: "GET",
+                        url: countlyCommon.API_PARTS.data.w + "/vue_example/delete",
+                        data: {
+                            "app_id": countlyCommon.ACTIVE_APP_ID,
+                            "id": id
+                        },
+                        dataType: "json"
+                    }));
+                },
+                status: function(context, updates) {
+                    return $.when($.ajax({
+                        type: "GET",
+                        url: countlyCommon.API_PARTS.data.w + "/vue_example/status",
+                        data: {
+                            "app_id": countlyCommon.ACTIVE_APP_ID,
+                            "records": JSON.stringify(updates)
+                        },
+                        dataType: "json"
+                    }));
+                },
+                fetchAll: function(context) {
+                    return $.when($.ajax({
+                        type: "GET",
+                        url: countlyCommon.API_URL + "/o",
+                        data: {
+                            app_id: countlyCommon.ACTIVE_APP_ID,
+                            method: 'vue-records'
+                        }
+                    })).then(function(res) {
+                        context.commit("setAll", res);
+                    });
+                },
+                fetchSingle: function(context, id) {
+                    return $.when($.ajax({
+                        type: "GET",
+                        url: countlyCommon.API_URL + "/o",
+                        data: {
+                            app_id: countlyCommon.ACTIVE_APP_ID,
+                            method: 'vue-records',
+                            id: id
+                        }
+                    })).then(function(records) {
+                        return records[0];
+                    });
+                }
             }
+        });
+
+        var table = countlyVue.vuex.DataTable("table", {
+            sourceRows: function(_state, _getters, _rootState, _rootGetters) {
+                return _rootGetters["countlyVueExample/myRecords/all"] || [];
+            },
+            trackedFields: ["status"],
+            keyFn: function(row) {
+                return row._id;
+            }
+        });
+
+        return countlyVue.vuex.Module("countlyVersionControl", {
+            resetFn: getEmptyState,
+            getters: getters,
+            actions: actions,
+            mutations: mutations,
+            submodules: [recordsResource, tooManyRecordsResource, table]
         });
     };
 
-    countlyVersionControl.getConditions = function() {
-        return _conditions;
-    };
-
-    countlyVersionControl.getCondition = function(conditionId) {
-        var condition = {};
-        for (var i = 0; i < _conditions.length; i++) {
-            if (_conditions[i]._id === conditionId) {
-                condition = _conditions[i];
-                break;
-            }
-        }
-
-        return condition;
-    };
-
-}(window.countlyVersionControl = window.countlyVersionControl || {}, jQuery));
+})(window.countlyVersionControl = window.countlyVersionControl || {});
