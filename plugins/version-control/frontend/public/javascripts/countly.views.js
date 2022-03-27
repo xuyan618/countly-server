@@ -1,48 +1,49 @@
 /*global app, countlyVue, countlyVueExample, countlyGlobal, countlyCommon, validators, extendViewWithFilter */
-
 const versionStatus = [
     {
-        label: 'Î´ÉÏ¼Ü',
+        label: 'Î´ï¿½Ï¼ï¿½',
         value: 0
     },
     {
-        label: 'ÒÑÉÏ¼Ü',
+        label: 'ï¿½ï¿½ï¿½Ï¼ï¿½',
         value: 1
     }
 ];
 
-var VersionsView = countlyVue.views.BaseView.extend({
+var VersionsView = countlyVue.views.BaseView.extend(
+    {
     template: '#version-control-list-template',
+
     data: function () {
         const validateTwoAppVersion = (rule, value, callback) => {
             if (value !== this.twoConfirm.appVersion) {
-                callback(new Error('?????·Ú?????,??????'));
+                callback(new Error('?????ï¿½ï¿½?????,??????'));
             } else {
                 callback();
             }
         };
 
         return {
-            // ÀàÐÍÉ¸Ñ¡
+            // ï¿½ï¿½ï¿½ï¿½É¸Ñ¡
             updateTypes: [
                 {
-                    label: 'Ç¿ÖÆ¸üÐÂ',
+                    label: 'Ç¿ï¿½Æ¸ï¿½ï¿½ï¿½',
                     value: 0
                 },
                 {
-                    label: 'Ò»°ã¸üÐÂ',
+                    label: 'Ò»ï¿½ï¿½ï¿½ï¿½ï¿½',
                     value: 1
                 },
                 {
-                    label: '¾²Ä¬¸üÐÂ',
+                    label: 'ï¿½ï¿½Ä¬ï¿½ï¿½ï¿½ï¿½',
                     value: 2
                 },
                 {
-                    label: '¿ÉºöÂÔ¸üÐÂ',
+                    label: 'ï¿½Éºï¿½ï¿½Ô¸ï¿½ï¿½ï¿½',
                     value: 3
                 },
                 {
-                    label: '¾²Ä¬¿ÉºöÂÔ¸üÐÂ',
+                    label: 'ï¿½ï¿½Ä¬ï¿½Éºï¿½ï¿½Ô¸ï¿½ï¿½ï¿½',
                     value: 4
                 }
             ],
@@ -55,25 +56,25 @@ var VersionsView = countlyVue.views.BaseView.extend({
                     width: 80
                 },
                 {
-                    title: '°æ±¾ºÅ',
+                    title: 'ï¿½æ±¾ï¿½ï¿½',
                     key: 'appVersion',
                     width: 140,
                     fixed: 'left'
                 },
                 {
-                    title: 'ÔÊÐí×îµÍ°æ±¾',
+                    title: 'ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í°æ±¾',
                     minWidth: 140,
                     key: 'allowLowestVersion'
                 },
                 {
-                    title: '¸üÐÂÀàÐÍ',
+                    title: 'ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½',
                     minWidth: 140,
                     render: (h, params) => {
                         return h('div', this.updateTypeFilter(params.row.updateType));
                     }
                 },
                 {
-                    title: '¸üÐÂÃèÊö',
+                    title: 'ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½',
                     width: 90,
                     align: 'center',
                     render: (h, params) => {
@@ -98,7 +99,7 @@ var VersionsView = countlyVue.views.BaseView.extend({
                                                             borderBottom: '1px solid #f7f7f7',
                                                             paddingBottom: '10px'
                                                         }
-                                                    }, '¸üÐÂÃèÊö'),
+                                                    }, 'ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½'),
                                                     h('pre', {
                                                         style: {
                                                             overflow: 'hidden',
@@ -110,12 +111,12 @@ var VersionsView = countlyVue.views.BaseView.extend({
                                         });
                                     }
                                 }
-                            }, '²é¿´')
+                            }, 'ï¿½é¿´')
                         ]);
                     }
                 },
                 {
-                    title: 'ÉÏÏÂ¼Ü',
+                    title: 'ï¿½ï¿½ï¿½Â¼ï¿½',
                     width: 90,
                     align: 'center',
                     render: (h, params) => {
@@ -147,7 +148,7 @@ var VersionsView = countlyVue.views.BaseView.extend({
                     }
                 },
                 {
-                    title: '¾²Ì¬·þÎñÆ÷µØÖ·',
+                    title: 'ï¿½ï¿½Ì¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö·',
                     minWidth: 200,
                     render: (h, params) => {
                         return h(
@@ -182,14 +183,14 @@ var VersionsView = countlyVue.views.BaseView.extend({
                     }
                 },
                 {
-                    title: '»Ò¶È·¢²¼',
+                    title: 'ï¿½Ò¶È·ï¿½ï¿½ï¿½',
                     minWidth: 140,
                     render: (h, params) => {
                         return h('div', this.grayReleasedFilter(params.row.grayReleased));
                     }
                 },
                 {
-                    title: 'Ìí¼ÓÊ±¼ä',
+                    title: 'ï¿½ï¿½ï¿½Ê±ï¿½ï¿½',
                     width: 180,
                     render: (h, params) => {
                         var date = new Date(params.row.createdTime);
@@ -197,12 +198,12 @@ var VersionsView = countlyVue.views.BaseView.extend({
                     }
                 },
                 {
-                    title: 'Ìí¼ÓÕß',
+                    title: 'ï¿½ï¿½ï¿½ï¿½ï¿½',
                     key: 'createdBy',
                     minWidth: 140
                 },
                 {
-                    title: '²Ù×÷',
+                    title: 'ï¿½ï¿½ï¿½ï¿½',
                     width: 220,
                     fixed: 'right',
                     render: (h, params) => {
@@ -217,7 +218,7 @@ var VersionsView = countlyVue.views.BaseView.extend({
                                 },
                                 on: {
                                     click: () => {
-                                        this.$Message.error('ÔÝÊ±²»Ö§³Ö°²×°°üÉÏ´«');
+                                        this.$Message.error('ï¿½ï¿½Ê±ï¿½ï¿½Ö§ï¿½Ö°ï¿½×°ï¿½ï¿½ï¿½Ï´ï¿½');
                                         // this.$router.push({
                                         //     name: 'version-android_apk',
                                         //     params: {
@@ -226,7 +227,7 @@ var VersionsView = countlyVue.views.BaseView.extend({
                                         // });
                                     }
                                 }
-                            }, '°ü¹ÜÀí'),
+                            }, 'ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½'),
                             h('Button', {
                                 props: {
                                     type: 'primary',
@@ -245,14 +246,14 @@ var VersionsView = countlyVue.views.BaseView.extend({
                                         });
                                     }
                                 }
-                            }, '±à¼­'),
+                            }, 'ï¿½à¼­'),
                             h('Poptip', {
                                 props: {
                                     confirm: true,
                                     transfer: true,
                                     width: 260,
                                     placement: 'top-end',
-                                    title: 'È·¶¨É¾³ý[' + params.row.appVersion + ']°æ±¾Âð£¿'
+                                    title: 'È·ï¿½ï¿½É¾ï¿½ï¿½[' + params.row.appVersion + ']ï¿½æ±¾ï¿½ï¿½'
                                 },
                                 on: {
                                     'on-ok': (value) => {
@@ -265,15 +266,15 @@ var VersionsView = countlyVue.views.BaseView.extend({
                                         type: 'error',
                                         size: 'small'
                                     }
-                                }, 'É¾³ý')
+                                }, 'É¾ï¿½ï¿½')
                             ])
                         ]);
                     }
                 }
             ],
             tableList: [],
-            inLoading: true,
-            // ·ÖÒ³
+            inLoading: false,
+            // ï¿½ï¿½Ò³
             currentPage: 1,
             total: 0,
             pageSize: 10,
@@ -297,7 +298,7 @@ var VersionsView = countlyVue.views.BaseView.extend({
             },
             twoConfirmRule: {
                 twoAppVersion: [
-                    {required: true, message: 'ÇëÊäÈëµ±Ç°ÉÏ¼ÜµÄ°æ±¾ºÅ', trigger: 'blur'},
+                    {required: true, message: 'ï¿½ï¿½ï¿½ï¿½ï¿½ëµ±Ç°ï¿½Ï¼ÜµÄ°æ±¾ï¿½ï¿½', trigger: 'blur'},
                     {required: true, validator: validateTwoAppVersion, trigger: 'blur'}
                 ]
             }
@@ -346,7 +347,7 @@ var VersionsView = countlyVue.views.BaseView.extend({
             if (response.data.code === 200) {
                 this.$Notice.success({
                     title: '??????',
-                    desc: `????·Ú[${response.data.data.appVersion}]???`
+                    desc: `????ï¿½ï¿½[${response.data.data.appVersion}]???`
                 });
             } else {
                 this.$Notice.error({
@@ -450,7 +451,7 @@ var VersionsView = countlyVue.views.BaseView.extend({
         twoConfirmSubmit(name) {
             this.$refs[name].validate((valid) => {
                 if (!valid) {
-                    this.$Message.error('??????????§Ò?????????!');
+                    this.$Message.error('??????????ï¿½ï¿½?????????!');
                     return false;
                 }
 

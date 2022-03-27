@@ -1,8 +1,5 @@
 var exportedPlugin = {},
     plugins = require("../../pluginManager");
-var Vue = require("frontend/express/public/javascripts/utils/vue/vue.min.js")
-var Element = require("element-ui")
-Vue.use(Element)
 
 (function(plugin) {
     plugin.init = function() {

@@ -20,7 +20,7 @@
   ],
   "cly_dependencies": {},
   "dependencies": {
-    "element-ui": "^2.15.6"
+    "iview": "^3.5.4"
   },
   "private": true
 }
