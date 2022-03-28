@@ -5,8 +5,7 @@
         @close="closeDrawer"
         @submit="onDrawerSubmit"
         v-bind="drawers.version">
-        <template slot-scope="drawerScope" slot="default">
-            
+        <template slot-scope="drawerScope" slot="default" >
             <edit-view id="mainSidecar" role="sidecar">
             </edit-view>
         </template>

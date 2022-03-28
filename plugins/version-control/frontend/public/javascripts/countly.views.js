@@ -533,7 +533,7 @@ var VersionEditView = countlyVue.views.BaseView.extend(
                 isEdit: false,
                 androidId: 0,
                 inLoading: false,
-                app: JSON.parse(localStorage.getItem('app') ? localStorage.getItem('app') : '{}'),
+                app: {appName:countlyGlobal.apps[countlyCommon.ACTIVE_APP_ID].name},
                 editForm: {
                     appVersion: '',
                     allowLowestVersion: '',
@@ -592,31 +592,36 @@ var VersionEditView = countlyVue.views.BaseView.extend(
         methods: {
             beforeLeavingStep: function () {
                 if (this.currentStepId === "step1") {
-                    [this.$v.editedObject.name, this.$v.editedObject.field1, this.$v.editedObject.field2].forEach(function (validator) {
+                    [this.$v.editedObject.appVersion, this.$v.editedObject.allowLowestVersion, this.$v.editedObject.versionDescription].forEach(function (validator) {
                         validator.$touch();
                     });
                 } else if (this.currentStepId === "step3") {
                     this.$v.editedObject.selectedProps.$touch();
                 }
             },
-
+            handleFormSubmit: function (editForm){
+                // handleSubmit('editFormRule')
+            }
         },
         validations: {
-            editedObject: {
-                name: {
-                    required: validators.required
-                },
-                field1: {
-                    required: validators.required
-                },
-                field2: {
-                    required: validators.required
-                },
-                selectedProps: {
-                    required: validators.required,
-                    minLength: validators.minLength(2)
-                }
-            }
+            // editedObject: {
+            //     appVersion: {required: validators.required},
+            //     allowLowestVersion: {
+            //         required: validators.required
+            //     },
+            //     updateType: {
+            //         required: validators.required
+            //     },
+            //     versionDescription: {
+            //         required: validators.required
+            //     },
+            //     grayReleased: {
+            //         required: validators.required
+            //     },
+            //     staticServerUrl: {
+            //         required: validators.required
+            //     }
+            // }
         }
     }
 );
@@ -647,25 +652,29 @@ var VersionDrawer = countlyVue.components.BaseDrawer.extend({
             } else {
                 this.title = "新增版本信息";
                 this.saveButtonLabel = "确认";
+                this.$v.$invalid = true;
             }
             return newState;
         }
     },
     validations: {
         editedObject: {
-            name: {
-                required: validators.required
-            },
-            field1: {
-                required: validators.required
-            },
-            field2: {
-                required: validators.required
-            },
-            selectedProps: {
-                required: validators.required,
-                minLength: validators.minLength(2)
-            }
+            // appVersion: {required: validators.required},
+            // allowLowestVersion: {
+            //     required: validators.required
+            // },
+            // updateType: {
+            //     required: validators.required
+            // },
+            // versionDescription: {
+            //     required: validators.required
+            // },
+            // grayReleased: {
+            //     required: validators.required
+            // },
+            // staticServerUrl: {
+            //     required: validators.required
+            // }
         }
     }
 

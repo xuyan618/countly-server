@@ -1,1 +1,12 @@
+.cly-vue-theme-clydef .cly-vue-drawer {
+    width: 1000px;
+}
 
+.cly-vue-theme-clydef .cly-vue-drawer.mounted {
+    transform: translateX(1000px);
+}
+
+.cly-vue-theme-clydef .cly-vue-drawer.open {
+    transform: translateX(0);
+    transition: transform 0.3s;
+}
