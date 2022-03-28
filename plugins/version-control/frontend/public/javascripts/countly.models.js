@@ -1,9 +1,9 @@
 /*global $, countlyCommon, _, countlyVue */
 
-(function(countVersionControl) {
+(function (countVersionControl) {
 
     countVersionControl.factory = {
-        getEmpty: function(fields) {
+        getEmpty: function (fields) {
             fields = fields || {};
             var original = {
                 _id: null,
@@ -19,91 +19,60 @@
         }
     };
 
-    countVersionControl.getVuexModule = function() {
+    countVersionControl.getVuexModule = function () {
 
-        var getEmptyState = function() {
+        var getEmptyState = function () {
             return {
-                graphPoints: [],
-                pieData: {
-                    "dp": [
-                        {"data": [[0, 20]], "label": "Test1", "color": "#52A3EF"},
-                        {"data": [[0, 10]], "label": "Test2", "color": "#FF8700"},
-                        {"data": [[0, 50]], "label": "Test3", "color": "#0EC1B9"}
-                    ]
-                },
-                lineData: {
-                    "dp": [
-                        {"data": [[-1, null], [0, 20], [1, 10], [2, 40], [3, null]], "label": "Value", "color": "#52A3EF"},
-                    ],
-                    "ticks": [[-1, ""], [0, "Test1"], [1, "Test2"], [2, "Test3"], [3, ""]]
-                },
-                barData: {
-                    "dp": [
-                        {"data": [[-1, null], [0, 20], [1, 10], [2, 40], [3, null]], "label": "Value", "color": "#52A3EF"},
-                    ],
-                    "ticks": [[-1, ""], [0, "Test1"], [1, "Test2"], [2, "Test3"], [3, ""]]
-                },
-                queryParams:{
-                    updateType:"",
-                    appVersion:"",
-                    versionStatus:"",
-
+                versionTableData: [],
+                queryParams: {
+                    updateType: "",
+                    appVersion: "",
+                    versionStatus: "",
                 }
             };
         };
 
         var getters = {
-            pieData: function(state) {
-                return state.pieData;
+
+            versionTableData: function (state) {
+                return state.versionTableData;
             },
-            barData: function(state) {
-                return state.barData;
-            },
-            lineData: function(state) {
-                return state.lineData;
-            },
-            graphPoints: function(state) {
-                return state.graphPoints;
-            },
-            queryParams:function (state){
+            queryParams: function (state) {
                 return state.queryParams;
             }
         };
 
         var actions = {
-            initialize: function(context) {
+            initialize: function (context) {
                 context.dispatch("refresh");
             },
-            refresh: function(context) {
-                context.dispatch("countlyVueExample/myRecords/fetchAll", null, {root: true});
-                context.dispatch("fetchGraphPoints");
+            refresh: function (context) {
+                context.dispatch("countVersionControl/myRecords/fetchAll", null, {root: true});
+                context.dispatch("versionTableData");
             },
-            fetchGraphPoints: function(context) {
+            versionTableData: function (context) {
                 return $.when($.ajax({
                     type: "GET",
-                    url: countlyCommon.API_URL + "/o",
+                    url: countlyCommon.API_URL + "/i/appversion",
                     data: {
                         app_id: countlyCommon.ACTIVE_APP_ID,
-                        method: 'get-random-numbers'
+                        method: 'get-all-versions'
                     }
-                })).then(function(obj) {
-                    context.commit("setGraphPoints", [obj, obj.map(function(x) {
-                        return x / 2;
-                    })]);
+                })).then(function (obj) {
+                    context.commit("setVersionTableData", obj);
                 });
             }
         };
 
         var mutations = {
-            setGraphPoints: function(state, val) {
-                state.graphPoints = val;
+            setVersionTableData: function (state, val) {
+                state.versionTableData = val;
             }
         };
 
         // Paged Resource
-
         var tooManyRecordsResource = countlyVue.vuex.Module("tooManyRecords", {
-            resetFn: function() {
+            resetFn: function () {
                 return {
                     paged: {
                         rows: []
@@ -112,20 +81,20 @@
                 };
             },
             getters: {
-                paged: function(state) {
+                paged: function (state) {
                     return state.paged;
                 }
             },
             mutations: {
-                setPaged: function(state, val) {
+                setPaged: function (state, val) {
                     state.paged = val;
                 },
-                setRequestParams: function(state, val) {
+                setRequestParams: function (state, val) {
                     state.requestParams = val;
                 }
             },
             actions: {
-                fetchPaged: function(context) {
+                fetchPaged: function (context) {
                     return $.when($.ajax({
                         type: "GET",
                         url: countlyCommon.API_URL + "/o",
@@ -135,10 +104,10 @@
                             table_params: JSON.stringify(context.state.requestParams)
                         }
                     }))
-                        .then(function(res) {
+                        .then(function (res) {
                             context.commit("setPaged", res);
                         })
-                        .catch(function() {
+                        .catch(function () {
                             context.commit("setPaged", {
                                 rows: [],
                                 totalRows: 0,
@@ -150,23 +119,23 @@
         });
 
         var recordsResource = countlyVue.vuex.Module("myRecords", {
-            resetFn: function() {
+            resetFn: function () {
                 return {
                     all: []
                 };
             },
             getters: {
-                all: function(state) {
+                all: function (state) {
                     return state.all;
                 }
             },
             mutations: {
-                setAll: function(state, val) {
+                setAll: function (state, val) {
                     state.all = val;
                 }
             },
             actions: {
-                save: function(context, record) {
+                save: function (context, record) {
                     return $.when($.ajax({
                         type: "POST",
                         url: countlyCommon.API_PARTS.data.w + "/vue_example/save",
@@ -177,7 +146,7 @@
                         dataType: "json"
                     }));
                 },
-                remove: function(context, id) {
+                remove: function (context, id) {
                     return $.when($.ajax({
                         type: "GET",
                         url: countlyCommon.API_PARTS.data.w + "/vue_example/delete",
@@ -188,7 +157,7 @@
                         dataType: "json"
                     }));
                 },
-                status: function(context, updates) {
+                status: function (context, updates) {
                     return $.when($.ajax({
                         type: "GET",
                         url: countlyCommon.API_PARTS.data.w + "/vue_example/status",
@@ -199,7 +168,7 @@
                         dataType: "json"
                     }));
                 },
-                fetchAll: function(context) {
+                fetchAll: function (context) {
                     return $.when($.ajax({
                         type: "GET",
                         url: countlyCommon.API_URL + "/o",
@@ -207,11 +176,11 @@
                             app_id: countlyCommon.ACTIVE_APP_ID,
                             method: 'vue-records'
                         }
-                    })).then(function(res) {
+                    })).then(function (res) {
                         context.commit("setAll", res);
                     });
                 },
-                fetchSingle: function(context, id) {
+                fetchSingle: function (context, id) {
                     return $.when($.ajax({
                         type: "GET",
                         url: countlyCommon.API_URL + "/o",
@@ -220,20 +189,10 @@
                             method: 'vue-records',
                             id: id
                         }
-                    })).then(function(records) {
+                    })).then(function (records) {
                         return records[0];
                     });
                 }
-            }
-        });
-
-        var table = countlyVue.vuex.DataTable("table", {
-            sourceRows: function(_state, _getters, _rootState, _rootGetters) {
-                return _rootGetters["countlyVueExample/myRecords/all"] || [];
-            },
-            trackedFields: ["status"],
-            keyFn: function(row) {
-                return row._id;
             }
         });
 
@@ -242,7 +201,7 @@
             getters: getters,
             actions: actions,
             mutations: mutations,
-            submodules: [recordsResource, tooManyRecordsResource, table]
+            submodules: [recordsResource, tooManyRecordsResource]
         });
     };
 

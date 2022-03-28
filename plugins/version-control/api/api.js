@@ -5,296 +5,36 @@ var pluginOb = {},
     remoteConfig = require('./parts/rc'),
     async = require('async');
 
-plugins.setConfigs("remote-config", {
-    maximum_allowed_parameters: 2000,
-    conditions_per_paramaeters: 20
-});
-
 (function() {
-    plugins.register("/o/sdk", function(ob) {
+    plugins.register("/i/appversion", function(ob) {
+        var validateUserForDataReadAPI = ob.validateUserForDataReadAPI;
+
         var params = ob.params;
 
-        if (params.qstring.method !== "fetch_remote_config") {
+        if (params.qstring.method !== "get-all-versions") {
             return false;
         }
+        console.log("获取版本信息:", params.qstring);
 
         return new Promise(function(resolve, reject) {
-            params.qstring.app_id = params.app_id;
-            var keys = [];
-            var omitKeys = [];
-
-            if (params.qstring.keys) {
-                try {
-                    keys = JSON.parse(params.qstring.keys);
-                }
-                catch (SyntaxError) {
-                    console.log('Parse keys failed: ', params.qstring.keys);
-                }
-            }
-
-            if (params.qstring.omit_keys) {
-                try {
-                    omitKeys = JSON.parse(params.qstring.omit_keys);
-                }
-                catch (SyntaxError) {
-                    console.log('Parse omit keys failed: ', params.qstring.omit_keys);
-                }
-            }
-
-            if (keys.length || omitKeys.length) {
-                params.parameter_criteria = {"$and": []};
-
-                if (keys.length) {
-                    params.parameter_criteria.$and.push({"parameter_key": { $in: keys }});
-                }
-
-                if (omitKeys.length) {
-                    params.parameter_criteria.$and.push({"parameter_key": { $nin: omitKeys }});
-                }
-            }
-
+            // params.qstring.app_id = params.app_id;
             params.app_user = params.app_user || {};
-            var user = JSON.parse(JSON.stringify(params.app_user));
-            var processMetrics = params.processed_metrics;
 
-            for (var prop in processMetrics) {
-                if ((processMetrics[prop] !== undefined) && (processMetrics[prop] !== null)) {
-                    user[prop] = processMetrics[prop];
-                    params.app_user[prop] = processMetrics[prop];
+            validateUserForDataReadAPI(params, function() {
+                var query = {};
+                if (ob.params.qstring.id) {
+                    query = { "app_id": params.app_id };
                 }
-            }
-
-            async.series([
-                fetchParametersFromRCDB.bind(null, params),
-                fetchParametersFromAB.bind(null, params)
-            ], function(err, result) {
-                if (err || !result) {
-                    common.returnMessage(params, 400, 'Error while fetching remote config data.');
-                    return reject(true);
-                }
-
-                var parameters = result[0] || [];
-                var abParameters = result[1] || [];
-                var output = {};
-
-                var parametersArray = [];
-                for (let i = 0; i < parameters.length; i++) {
-                    parametersArray.push(parameters[i].parameter_key);
-                }
-
-                //PRIORITY GIVEN TO PARAMETERS PRESENT IN AB TESTING
-                for (let i = 0; i < abParameters.length; i++) {
-                    var parameterKey = abParameters[i].parameter_key;
-                    var paramValue = abParameters[i].value;
-
-                    var indexOfKey = parametersArray.indexOf(parameterKey);
-                    if (indexOfKey > -1) {
-                        parameters.splice(indexOfKey, 1);
-                        parametersArray.splice(indexOfKey, 1);
-                    }
-
-                    output[parameterKey] = paramValue;
-                }
-
-                async.map(parameters, function(parameter, callback) {
-                    var paramConditions = parameter.conditions || [];
-                    var parameterValue = parameter.default_value;
-                    var paramConditionIds = [];
-                    for (let i = 0; i < paramConditions.length; i++) {
-                        paramConditionIds.push(common.outDb.ObjectID(paramConditions[i].condition_id));
-                    }
-
-                    params.condition_criteria = {
-                        _id: {
-                            $in: paramConditionIds
-                        }
-                    };
-
-                    var drillAvailable = plugins.isPluginEnabled('drill');
-
-                    if (drillAvailable) {
-                        //The following block will only work if -
-                        //The remote config condition processing module is available
-                        //This module is only available in the enterprise version of the plugin
-
-                        async.series([fetchConditions.bind(null, params)], function(er, res) {
-                            if (er || !res) {
-                                output[parameter.parameter_key] = parameterValue;
-                                log.w("Error while fetching condition", parameter);
-                                return callback(null);
-                            }
-
-                            var paramConditionsInfo = res[0];
-
-                            for (let i = 0; i < paramConditions.length; i++) {
-                                var conditionInfo = paramConditionsInfo.filter(function(cond) {
-                                    return cond._id.toString() === paramConditions[i].condition_id.toString();
-                                });
-
-                                if (!conditionInfo.length) {
-                                    continue;
-                                }
-
-                                var conditionObj = conditionInfo[0];
-                                conditionObj.value = paramConditions[i].value;
-
-                                try {
-                                    conditionObj.condition = JSON.parse(conditionObj.condition);
-                                    plugins.dispatch("/drill/preprocess_query", {
-                                        query: conditionObj.condition
-                                    });
-                                }
-                                catch (e) {
-                                    log.w("Skipping condition", conditionObj);
-                                    continue;
-                                }
-
-                                var seed = conditionObj.seed_value || "";
-                                var deviceId = params.qstring.device_id || "";
-                                user.random_percentile = remoteConfig.randomPercentile(seed, deviceId);
-
-                                var conditionStatus = remoteConfig.processFilter(params, user, conditionObj.condition);
-
-                                if (conditionStatus) {
-                                    parameterValue = conditionObj.value;
-                                    break;
-                                }
-                            }
-
-                            output[parameter.parameter_key] = parameterValue;
-                            return callback(null);
-                        });
-                    }
-                    else {
-                        log.d("Condition processing is not available for you. Its only available to the EE users.");
-                        output[parameter.parameter_key] = parameterValue;
-                        return callback(null);
-                    }
-
-                }, function(e) {
-                    if (e) {
-                        common.returnMessage(params, 400, 'Error while fetching remote config data.');
-                        return reject(true);
-                    }
-
-                    common.returnOutput(params, output, true);
-                    return resolve(true);
+                common.db.collection("app_version").find(query).toArray(function(err, records) {
+                    common.returnOutput(params, records || []);
                 });
             });
+            return true;
+
         });
     });
 
-    plugins.register("/i/remote-config", function(ob) {
-        var params = ob.params,
-            paths = ob.paths,
-            validateUserForDataWriteAPI = ob.validateUserForDataWriteAPI;
-
-        switch (paths[3]) {
-        case 'add-parameter': validateUserForDataWriteAPI(params, addParameter);
-            break;
-        case 'update-parameter': validateUserForDataWriteAPI(params, updateParameter);
-            break;
-        case 'remove-parameter': validateUserForDataWriteAPI(params, removeParameter);
-            break;
-        case 'add-condition': validateUserForDataWriteAPI(params, addCondition);
-            break;
-        case 'update-condition': validateUserForDataWriteAPI(params, updateCondition);
-            break;
-        case 'remove-condition': validateUserForDataWriteAPI(params, removeCondition);
-            break;
-        case 'add-complete-config': validateUserForDataWriteAPI(params, addCompleteConfig);
-            break;
-        default: common.returnMessage(params, 404, 'Invalid endpoint');
-            break;
-        }
-        return true;
-    });
-
-    plugins.register("/o", function(ob) {
-        var params = ob.params;
-        var validateUserForDataReadAPI = ob.validateUserForDataReadAPI;
-
-        if (params.qstring.method === "remote-config") {
-            validateUserForDataReadAPI(params, function() {
-                var parallelTasks = [
-                    fetchParametersFromRCDB.bind(null, params),
-                    fetchConditions.bind(null, params)
-                ];
-
-                async.parallel(parallelTasks, function(err, result) {
-                    if (err || !result) {
-                        common.returnMessage(params, 401, 'Error while fetching remote config data.');
-                        return true;
-                    }
-
-                    var parameters = result[0] || [];
-                    var conditions = result[1] || [];
-
-                    for (let i = 0; i < conditions.length; i++) {
-                        var conditionId = conditions[i]._id;
-                        conditions[i].used_in_parameters = 0;
-                        for (let j = 0; j < parameters.length; j++) {
-                            var paramConditions = parameters[j].conditions || [];
-                            var filteredCondition = paramConditions.filter(function(obj) {
-                                return obj.condition_id.toString() === conditionId.toString();
-                            });
-
-                            if (filteredCondition.length) {
-                                conditions[i].used_in_parameters++;
-                            }
-                        }
-                    }
-
-                    var output = {
-                        parameters: parameters,
-                        conditions: conditions
-                    };
-                    common.returnOutput(params, output);
-                });
-            });
-
-            return true;
-        }
-    });
-
-    plugins.register("/log", function(ob) {
-        var params = ob.params;
-        var insertData = ob.insertData;
-        var problems = ob.problems;
-        var types = insertData.t;
-
-        if (params.qstring.method !== "fetch_remote_config") {
-            return;
-        }
-
-        types.rc = insertData.res;
-
-        if (params.qstring.keys) {
-            try {
-                JSON.parse(params.qstring.keys);
-            }
-            catch (ex) {
-                problems.push("Could not parse keys");
-            }
-        }
-
-        if (params.qstring.omit_keys) {
-            try {
-                JSON.parse(params.qstring.omit_keys);
-            }
-            catch (SyntaxError) {
-                problems.push("Could not parse omit keys");
-            }
-        }
-    });
-
     plugins.register("/i/apps/delete", function(ob) {
-        var appId = ob.appId;
-        common.outDb.collection('remoteconfig_parameters' + appId).drop(function() {});
-        common.outDb.collection('remoteconfig_conditions' + appId).drop(function() {});
-    });
-
-    plugins.register("/i/apps/reset", function(ob) {
         var appId = ob.appId;
         common.outDb.collection('remoteconfig_parameters' + appId).drop(function() {});
         common.outDb.collection('remoteconfig_conditions' + appId).drop(function() {});
