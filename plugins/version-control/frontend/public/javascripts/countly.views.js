@@ -466,7 +466,7 @@ var VersionDrawer = countlyVue.components.BaseDrawer.extend({
                 this.saveButtonLabel = "确认";
                 // this.$v.$invalid = true;
             }
-            // this.$parent.$refs.editView.editForm = newState;
+            this.$parent.$refs.editView.editForm = newState;
             this.$parent.$refs.editView.$refs.editFormRule.model = newState;
             return newState;
         }

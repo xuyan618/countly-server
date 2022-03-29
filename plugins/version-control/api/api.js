@@ -12,50 +12,47 @@ const {validateUserForWrite} = require("../../../api/utils/rights");
 
         var params = ob.params;
 
-        if (params.qstring.method !== "get-all-versions") {
-            return false;
-        }
-        console.log("获取版本信息:", params.qstring);
+        if (params.qstring.method === "get-all-versions") {
+            console.log("获取版本信息:", params.qstring);
 
-        return new Promise(function(resolve, reject) {
-            // params.qstring.app_id = params.app_id;
-            params.app_user = params.app_user || {};
+            return new Promise(function(resolve, reject) {
+                // params.qstring.app_id = params.app_id;
+                params.app_user = params.app_user || {};
+
+                validateUserForDataReadAPI(params, function() {
+                    var query = {};
+                    if (ob.params.qstring.id) {
+                        query = { "app_id": params.app_id };
+                    }
+                    common.db.collection("app_version").find(query).toArray(function(err, records) {
+                        common.returnOutput(params, records || []);
+                    });
+                });
+                return true;
+
+            });
+        }else if (params.qstring.methods === "save") {
+            console.log("获取版本信息:", params.qstring);
 
             validateUserForDataReadAPI(params, function() {
-                var query = {};
-                if (ob.params.qstring.id) {
-                    query = { "app_id": params.app_id };
+                let record = params.qstring.record;
+                record = JSON.parse(record);
+                record.appid = params.app_id;
+                if (!record._id) {
+                    return common.db.collection("app_version").insert(record, function(err, result) {
+                        common.returnOutput(params, result.insertedIds[0]);
+                    });
                 }
-                common.db.collection("app_version").find(query).toArray(function(err, records) {
-                    common.returnOutput(params, records || []);
-                });
+                else {
+                    const id = record._id;
+                    delete record._id;
+                    return common.db.collection("app_version").findAndModify({ _id: common.db.ObjectID(id) }, {}, {$set: record}, function(err, result) {
+                        common.returnOutput(params, result && result.value._id);
+                    });
+                }
             });
             return true;
-
-        });
-    });
-
-    plugins.register("/i/appversion/save", function(ob) {
-        let paramsInstance = ob.params;
-        ob.validateUserForDataReadAPI(paramsInstance, function(params) {
-            let record = params.qstring.record;
-            record = JSON.parse(record);
-            record.appid = paramsInstance.app_id;
-            if (!record._id) {
-                return common.db.collection("app_version").insert(record, function(err, result) {
-                    common.returnOutput(params, result.insertedIds[0]);
-                });
-            }
-            else {
-                const id = record._id;
-                delete record._id;
-                return common.db.collection("app_version").findAndModify({ _id: common.db.ObjectID(id) }, {}, {$set: record}, function(err, result) {
-                    common.returnOutput(params, result && result.value._id);
-                });
-            }
-        });
-        return true;
-
+        }
     });
 
     /**

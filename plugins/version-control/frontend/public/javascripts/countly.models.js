@@ -140,8 +140,8 @@
                         type: "POST",
                         url: countlyCommon.API_PARTS.data.w + "/appversion/save",
                         data: {
-                            "app_id": countlyCommon.ACTIVE_APP_ID,
-                            "record": JSON.stringify(record)
+                            app_id: countlyCommon.ACTIVE_APP_ID,
+                            record: JSON.stringify(record)
                         },
                         dataType: "json"
                     }));
