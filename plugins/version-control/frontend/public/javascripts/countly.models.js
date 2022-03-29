@@ -2,21 +2,21 @@
 
 (function (countVersionControl) {
 
+
     countVersionControl.factory = {
-        getEmpty: function (fields) {
+        getEditFormEmpty: function (fields) {
             fields = fields || {};
             var original = {
                 _id: null,
-                name: '',
-                field1: '',
-                field2: '',
-                description: '',
-                status: false,
-                selectedProps: [],
-                visibility: 'private'
+                appVersion: '1.0.1.1',
+                allowLowestVersion: '',
+                updateType: 0,
+                versionDescription: '',
+                grayReleased: 0,
+                staticServerUrl: ''
             };
             return _.extend(original, fields);
-        }
+        },
     };
 
     countVersionControl.getVuexModule = function () {
@@ -138,7 +138,7 @@
                 save: function (context, record) {
                     return $.when($.ajax({
                         type: "POST",
-                        url: countlyCommon.API_PARTS.data.w + "/vue_example/save",
+                        url: countlyCommon.API_PARTS.data.w + "/i/appversion/save",
                         data: {
                             "app_id": countlyCommon.ACTIVE_APP_ID,
                             "record": JSON.stringify(record)
@@ -149,7 +149,7 @@
                 remove: function (context, id) {
                     return $.when($.ajax({
                         type: "GET",
-                        url: countlyCommon.API_PARTS.data.w + "/vue_example/delete",
+                        url: countlyCommon.API_PARTS.data.w + "/i/appversion/delete",
                         data: {
                             "app_id": countlyCommon.ACTIVE_APP_ID,
                             "id": id
