@@ -9,11 +9,11 @@
             var original = {
                 _id: null,
                 appVersion: '1.0.1.1',
-                allowLowestVersion: '',
+                allowLowestVersion: '1.0.1.0',
                 updateType: 0,
-                versionDescription: '',
+                versionDescription: '布范围全量发布布范围全量发布',
                 grayReleased: 0,
-                staticServerUrl: ''
+                staticServerUrl: 'http://www.baidu.com'
             };
             return _.extend(original, fields);
         },
@@ -138,7 +138,7 @@
                 save: function (context, record) {
                     return $.when($.ajax({
                         type: "POST",
-                        url: countlyCommon.API_PARTS.data.w + "/i/appversion/save",
+                        url: countlyCommon.API_PARTS.data.w + "/appversion/save",
                         data: {
                             "app_id": countlyCommon.ACTIVE_APP_ID,
                             "record": JSON.stringify(record)
@@ -149,7 +149,7 @@
                 remove: function (context, id) {
                     return $.when($.ajax({
                         type: "GET",
-                        url: countlyCommon.API_PARTS.data.w + "/i/appversion/delete",
+                        url: countlyCommon.API_PARTS.data.w + "/appversion/delete",
                         data: {
                             "app_id": countlyCommon.ACTIVE_APP_ID,
                             "id": id

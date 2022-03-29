@@ -421,9 +421,9 @@ var VersionEditView = countlyVue.views.BaseView.extend({
             updateTypes,
             grayReleaseds
         };
-    }, created() {
-        console.log("视图创建了");
-    }, filters: {
+    },
+
+    filters: {
         updateTypeFilter(type) {
             let o = updateTypes.find(item => {
                 return item.value === type;
@@ -467,7 +467,7 @@ var VersionDrawer = countlyVue.components.BaseDrawer.extend({
                 // this.$v.$invalid = true;
             }
             // this.$parent.$refs.editView.editForm = newState;
-            // this.$parent.$refs.editView.$refs.editFormRule.model = newState;
+            this.$parent.$refs.editView.$refs.editFormRule.model = newState;
             return newState;
         }
     }, created() {

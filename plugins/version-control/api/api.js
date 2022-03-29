@@ -4,6 +4,7 @@ var pluginOb = {},
     log = common.log('remote-config:api'),
     remoteConfig = require('./parts/rc'),
     async = require('async');
+const {validateUserForWrite} = require("../../../api/utils/rights");
 
 (function() {
     plugins.register("/i/appversion", function(ob) {
@@ -34,10 +35,27 @@ var pluginOb = {},
         });
     });
 
-    plugins.register("/i/apps/delete", function(ob) {
-        var appId = ob.appId;
-        common.outDb.collection('remoteconfig_parameters' + appId).drop(function() {});
-        common.outDb.collection('remoteconfig_conditions' + appId).drop(function() {});
+    plugins.register("/i/appversion/save", function(ob) {
+        let paramsInstance = ob.params;
+        ob.validateUserForDataReadAPI(paramsInstance, function(params) {
+            let record = params.qstring.record;
+            record = JSON.parse(record);
+            record.appid = paramsInstance.app_id;
+            if (!record._id) {
+                return common.db.collection("app_version").insert(record, function(err, result) {
+                    common.returnOutput(params, result.insertedIds[0]);
+                });
+            }
+            else {
+                const id = record._id;
+                delete record._id;
+                return common.db.collection("app_version").findAndModify({ _id: common.db.ObjectID(id) }, {}, {$set: record}, function(err, result) {
+                    common.returnOutput(params, result && result.value._id);
+                });
+            }
+        });
+        return true;
+
     });
 
     /**
