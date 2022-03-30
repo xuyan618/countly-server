@@ -262,7 +262,7 @@ var VersionsView = countlyVue.views.BaseView.extend({
         queryParams: function () {
             return this.$store.getters["countlyVersionControl/queryParams"];
         },
-        isLoading(){
+        isLoading() {
             return this.$store.getters["countlyVersionControl/isLoading"];
         }
     },
@@ -288,11 +288,11 @@ var VersionsView = countlyVue.views.BaseView.extend({
         async delIOS(params) {
             this.$store.dispatch("countlyVersionControl/myRecords/remove", params).then((response) => {
                 response = JSON.parse(response);
-                if (response.code === 10000){
+                if (response.code === 10000) {
                     this.$Notice.success({
                         title: '请求成功', desc: response.message
                     });
-                }else {
+                } else {
                     this.$Notice.error({
                         title: '请求成功', desc: response.message
                     });
@@ -303,7 +303,7 @@ var VersionsView = countlyVue.views.BaseView.extend({
 
         putChangeStatus(params, status) {
             params.versionStatus = status;
-            this.$store.dispatch("countlyVersionControl/myRecords/save", params).then(response =>{
+            this.$store.dispatch("countlyVersionControl/myRecords/save", params).then(response => {
                 response = JSON.parse(response);
 
                 if (response.code === 10000) {
@@ -333,10 +333,10 @@ var VersionsView = countlyVue.views.BaseView.extend({
             this.$emit("open-versionDrawer", "version", iOSModel);
         },
         toChannelPage() {
-            let channelModel = countlyVersionControl.factory.getEditFormEmpty();
+            let channelModel = {"channelCode": "", "channelDesc": ""};
             this.$emit("open-versionDrawer", "channel", channelModel);
         },
-        searchVersions(){
+        searchVersions() {
             this.currentPage = 1;
             this.getVersions();
         },
@@ -424,9 +424,6 @@ var VersionsView = countlyVue.views.BaseView.extend({
             return word;
         },
         twoConfirmCancel() {
-            let item = this.tableList.find(item => {
-                return item.id === this.twoConfirm.id;
-            });
             this.getVersions();
             this.inTwoConfirm = false;
         },
@@ -436,7 +433,6 @@ var VersionsView = countlyVue.views.BaseView.extend({
                     this.$Message.error('请先完成所有必填项内容!');
                     return false;
                 }
-
                 this.putChangeStatus(this.twoConfirm, 1);
                 this.inTwoConfirm = false;
             });
@@ -533,7 +529,6 @@ var VersionEditView = countlyVue.views.BaseView.extend({
 var VersionDrawer = countlyVue.components.BaseDrawer.extend({
 
     methods: {
-
         afterObjectCopy: function (newState) {
             if (newState._id !== null) {
                 this.title = "编辑版本信息";
@@ -555,63 +550,33 @@ var VersionDrawer = countlyVue.components.BaseDrawer.extend({
 });
 
 var ChannelDrawer = countlyVue.components.BaseDrawer.extend({
+
     computed: {
         stepValidations: function () {
             return {
-                "step1": !(this.$v.editedObject.name.$invalid || this.$v.editedObject.field1.$invalid || this.$v.editedObject.field2.$invalid),
-                "step3": !(this.$v.editedObject.selectedProps.$invalid)
+                "step1": !(this.$v.editedObject.channelCode.$invalid || this.$v.editedObject.channelDesc.$invalid),
             };
         }
     },
     data: function () {
         return {
-            constants: {
-                "visibilityOptions": [{
-                    label: "Global", value: "global", description: "Can be seen by everyone."
-                }, {label: "Private", value: "private", description: "Can be seen by the creator."}],
-                "availableProps": [{label: "Type 1", value: 1}, {label: "Type 2", value: 2}, {
-                    label: "Type 3", value: 3
-                }]
-            }
+            editedChanelObject:null
         };
     },
     methods: {
-        beforeLeavingStep: function () {
-            if (this.currentStepId === "step1") {
-                [this.$v.editedObject.name, this.$v.editedObject.field1, this.$v.editedObject.field2].forEach(function (validator) {
-                    validator.$touch();
-                });
-            } else if (this.currentStepId === "step3") {
-                this.$v.editedObject.selectedProps.$touch();
-            }
-        }, afterObjectCopy: function (newState) {
-            if (newState._id !== null) {
-                this.title = "Edit Record";
-                this.saveButtonLabel = "Save Changes";
+
+        afterObjectCopy: function (newState) {
+            if (newState.channelCode !== null) {
+                this.title = "编辑渠道";
             } else {
-                this.title = "Create New Record";
-                this.saveButtonLabel = "Create Record";
+                this.title = "新增渠道";
             }
+            this.saveButtonLabel = "保存";
+            this.editedChanelObject = newState;
             return newState;
         }
     },
-    validations: {
-        editedObject: {
-            // name: {
-            //     required: validators.required
-            // },
-            // field1: {
-            //     required: validators.required
-            // },
-            // field2: {
-            //     required: validators.required
-            // },
-            // selectedProps: {
-            //     required: validators.required,
-            //     minLength: validators.minLength(2)
-            // }
-        }
-    }
+    validations: {}
 });
 
 var MainView = countlyVue.views.BaseView.extend({
@@ -631,21 +596,26 @@ var MainView = countlyVue.views.BaseView.extend({
     },
     methods: {
         onDrawerSubmit: function (doc) {
-            console.log('提交按钮', doc);
-            this.$store.dispatch("countlyVersionControl/myRecords/save", doc).then(response =>{
-                response = JSON.parse(response.result);
+            console.log('提交版本按钮', doc);
+            this.$store.dispatch("countlyVersionControl/myRecords/save", doc).then(response => {
+                response = JSON.parse(response);
 
                 if (response.code === 10000) {
                     this.$Notice.success({
-                        title: '请求成功', desc: `${status}成功`
+                        title: '请求成功', desc: response.message
                     });
+                    this.$store.dispatch("countlyVersionControl/versionTableData");
                 } else {
                     this.$Notice.error({
-                        title: '请求失败', desc: response.data.message
+                        title: '请求失败', desc: response.message
                     });
                 }
-            });;
+            });
         },
+        onChannelDrawerSubmit: function (channel) {
+            console.log('提交渠道按钮', channel);
+
+        }
     },
 
     watch: {
