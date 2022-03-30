@@ -6,8 +6,8 @@ var pluginOb = {},
     async = require('async');
 const {validateUserForWrite} = require("../../../api/utils/rights");
 
-(function() {
-    plugins.register("/i/appversion", function(ob) {
+(function () {
+    plugins.register("/i/appversion", function (ob) {
         var validateUserForDataReadAPI = ob.validateUserForDataReadAPI;
 
         var params = ob.params;
@@ -15,41 +15,81 @@ const {validateUserForWrite} = require("../../../api/utils/rights");
         if (params.qstring.method === "get-all-versions") {
             console.log("获取版本信息:", params.qstring);
 
-            return new Promise(function(resolve, reject) {
+            return new Promise(function (resolve, reject) {
                 // params.qstring.app_id = params.app_id;
                 params.app_user = params.app_user || {};
 
-                validateUserForDataReadAPI(params, function() {
+                validateUserForDataReadAPI(params, function () {
                     var query = {};
                     if (ob.params.qstring.id) {
-                        query = { "app_id": params.app_id };
+                        query = {"app_id": params.app_id};
                     }
-                    common.db.collection("app_version").find(query).toArray(function(err, records) {
+                    common.db.collection("app_version").find(query).toArray(function (err, records) {
                         common.returnOutput(params, records || []);
                     });
                 });
                 return true;
-
             });
-        }else if (params.qstring.methods === "save") {
-            console.log("获取版本信息:", params.qstring);
+        } else if (params.qstring.method === "save") {
+            console.log("新增版本信息:", params.qstring);
 
-            validateUserForDataReadAPI(params, function() {
+            validateUserForWrite(params, function (callBackResult) {
                 let record = params.qstring.record;
                 record = JSON.parse(record);
-                record.appid = params.app_id;
+                record.appid = params.qstring.app_id;
+                record.createdBy = callBackResult.member.username;
                 if (!record._id) {
-                    return common.db.collection("app_version").insert(record, function(err, result) {
-                        common.returnOutput(params, result.insertedIds[0]);
+                    record.createdTime = new Date();
+                    return common.db.collection("app_version").insert(record, function (err, result) {
+                        let response = {"message": "版本新增成功", "code": 10000};
+                        if (!err){
+                            common.returnOutput(params, JSON.stringify(response));
+                        }else {
+                            response.message = "版本新增失败"
+                            response.code = 10001
+                            common.returnOutput(params, JSON.stringify(response));
+                        }
                     });
-                }
-                else {
+                } else {
+                    record.editTime = new Date();
                     const id = record._id;
                     delete record._id;
-                    return common.db.collection("app_version").findAndModify({ _id: common.db.ObjectID(id) }, {}, {$set: record}, function(err, result) {
-                        common.returnOutput(params, result && result.value._id);
+                    return common.db.collection("app_version").findAndModify({_id: common.db.ObjectID(id)}, {}, {$set: record}, function (err, result) {
+                        let response = {"message": "版本更新成功", "code": 10000};
+                        if (!err){
+                            common.returnOutput(params, JSON.stringify(response));
+                        }else {
+                            response.message = "版本更新失败"
+                            response.code = 10001
+                            common.returnOutput(params, JSON.stringify(response));
+                        }
+
                     });
                 }
+            });
+            return true;
+        } else if (params.qstring.method === "delete") {
+            console.log("删除版本信息:", params.qstring);
+            validateUserForWrite(params, function (callBackResult) {
+                let parameterId = params.qstring.id;
+                let collectionName = "app_version";
+                common.db.collection(collectionName).findOne({"_id": common.db.ObjectID(parameterId)}, function (err, parameter) {
+                    let response = {"message": "版本删除成功", "code": 10000};
+                    if (!err) {
+                        common.db.collection(collectionName).remove({_id: common.db.ObjectID(parameterId)}, function (removeErr) {
+                            if (!removeErr) {
+                                return common.returnOutput(params, 200, JSON.stringify(response));
+                            }
+                            response.message = "应用修改失败，请重试"
+                            response.code = 10001;
+                            return common.returnOutput(params, 500, JSON.stringify(response));
+                        });
+                    } else {
+                        response.message = "应用不存在，请重试"
+                        response.code = 10002;
+                        return common.returnMessage(params, 500, JSON.stringify(response));
+                    }
+                });
             });
             return true;
         }
@@ -66,8 +106,7 @@ const {validateUserForWrite} = require("../../../api/utils/rights");
 
         try {
             parameter = JSON.parse(params.qstring.parameter);
-        }
-        catch (SyntaxError) {
+        } catch (SyntaxError) {
             console.log('Parse parameter failed: ', params.qstring.parameter);
         }
 
@@ -109,7 +148,7 @@ const {validateUserForWrite} = require("../../../api/utils/rights");
             insertParameter.bind(null, params, collectionName, parameter)
         ];
 
-        async.series(asyncTasks, function(err) {
+        async.series(asyncTasks, function (err) {
             if (err) {
                 var message = 'Failed to add parameter';
                 if (err.exists) {
@@ -138,8 +177,7 @@ const {validateUserForWrite} = require("../../../api/utils/rights");
 
         try {
             config = JSON.parse(params.qstring.config);
-        }
-        catch (SyntaxError) {
+        } catch (SyntaxError) {
             console.log('Parse config failed: ', params.qstring.config);
         }
 
@@ -155,7 +193,7 @@ const {validateUserForWrite} = require("../../../api/utils/rights");
         var maximumParametersAllowed = plugins.getConfig("remote-config").maximum_allowed_parameters;
         var maximumConditionsAllowed = plugins.getConfig("remote-config").conditions_per_paramaeters;
 
-        var parametersList = parameters.map(function(p) {
+        var parametersList = parameters.map(function (p) {
             return p.parameter_key;
         });
 
@@ -182,7 +220,7 @@ const {validateUserForWrite} = require("../../../api/utils/rights");
             asyncTasks.push(checkIfConditionExists.bind(null, appId, conditionName, null));
         }
 
-        async.parallel(asyncTasks, function(err, result) {
+        async.parallel(asyncTasks, function (err, result) {
             if (err) {
                 return common.returnMessage(params, 500, "Condition already exists or parameters limit reached");
             }
@@ -196,7 +234,7 @@ const {validateUserForWrite} = require("../../../api/utils/rights");
                 asyncTasks = [insertCondition.bind(null, condition)];
             }
 
-            async.parallel(asyncTasks, function(error, res) {
+            async.parallel(asyncTasks, function (error, res) {
                 var conditionId;
 
                 if (isCondition) {
@@ -218,7 +256,7 @@ const {validateUserForWrite} = require("../../../api/utils/rights");
                         return common.returnMessage(params, 400, 'Invalid parameter: parameter_key');
                     }
 
-                    var existingParameter = existingParameters.filter(function(p) {
+                    var existingParameter = existingParameters.filter(function (p) {
                         return p.parameter_key === param.parameter_key;
                     });
 
@@ -230,8 +268,8 @@ const {validateUserForWrite} = require("../../../api/utils/rights");
                     }
                 }
 
-                async.map(parameters, function(parameter, done) {
-                    var existingParam = existingParameters.filter(function(p) {
+                async.map(parameters, function (parameter, done) {
+                    var existingParam = existingParameters.filter(function (p) {
                         return p.parameter_key === parameter.parameter_key;
                     });
 
@@ -254,16 +292,14 @@ const {validateUserForWrite} = require("../../../api/utils/rights");
                                 condition_id: conditionId,
                                 value: parameter.exp_value
                             });
-                        }
-                        else {
+                        } else {
                             //Set the experiment value as default value
                             parameterObj.default_value = parameter.exp_value;
                         }
 
                         processParamValue(parameterObj);
                         func = updateParameterInDb.bind(null, params, collectionName, parameterId, parameterObj);
-                    }
-                    else {
+                    } else {
                         //This is a new parameter
                         parameterObj = {};
                         parameterObj.parameter_key = parameter.parameter_key;
@@ -278,8 +314,7 @@ const {validateUserForWrite} = require("../../../api/utils/rights");
                                     value: parameter.exp_value
                                 }
                             ];
-                        }
-                        else {
+                        } else {
                             //Set the experiment value as default value
                             parameterObj.conditions = [];
                             parameterObj.default_value = parameter.exp_value;
@@ -289,15 +324,19 @@ const {validateUserForWrite} = require("../../../api/utils/rights");
                         func = insertParameter.bind(null, params, collectionName, parameterObj);
                     }
 
-                    func(function(e) {
+                    func(function (e) {
                         return done(e);
                     });
-                }, function(errr) {
+                }, function (errr) {
                     if (errr) {
                         return common.returnMessage(params, 500, "Error while adding the config.");
                     }
 
-                    plugins.dispatch("/systemlogs", {params: params, action: "rc_rollout", data: {parameters: parameters, condition: condition}});
+                    plugins.dispatch("/systemlogs", {
+                        params: params,
+                        action: "rc_rollout",
+                        data: {parameters: parameters, condition: condition}
+                    });
                     return common.returnMessage(params, 200);
                 });
             });
@@ -310,7 +349,7 @@ const {validateUserForWrite} = require("../../../api/utils/rights");
          */
         function insertCondition(cond, callback) {
             var collectionName = "remoteconfig_conditions" + appId;
-            common.outDb.collection(collectionName).insert(cond, function(err, result) {
+            common.outDb.collection(collectionName).insert(cond, function (err, result) {
                 if (!err && result && result.insertedIds && result.insertedIds[0]) {
                     var conditionId = result.insertedIds[0];
                     return callback(err, conditionId);
@@ -332,8 +371,7 @@ const {validateUserForWrite} = require("../../../api/utils/rights");
 
         try {
             parameter = JSON.parse(params.qstring.parameter);
-        }
-        catch (SyntaxError) {
+        } catch (SyntaxError) {
             console.log('Parse parameter failed: ', params.qstring.parameter);
         }
 
@@ -365,7 +403,7 @@ const {validateUserForWrite} = require("../../../api/utils/rights");
             updateParameterInDb.bind(null, params, collectionName, parameterId, parameter)
         ];
 
-        async.series(asyncTasks, function(err) {
+        async.series(asyncTasks, function (err) {
             if (err) {
                 var message = 'Failed to update parameter';
                 if (err.exists) {
@@ -399,14 +437,17 @@ const {validateUserForWrite} = require("../../../api/utils/rights");
             }
         };
 
-        common.outDb.collection(collectionName).findOne({"_id": common.outDb.ObjectID(parameterId)}, function(err, beforeData) {
+        common.outDb.collection(collectionName).findOne({"_id": common.outDb.ObjectID(parameterId)}, function (err, beforeData) {
             if (!err) {
-                common.outDb.collection(collectionName).update({_id: common.outDb.ObjectID(parameterId)}, update, function(updateErr) {
-                    plugins.dispatch("/systemlogs", {params: params, action: "rc_parameter_edited", data: { before: beforeData, after: parameter }});
+                common.outDb.collection(collectionName).update({_id: common.outDb.ObjectID(parameterId)}, update, function (updateErr) {
+                    plugins.dispatch("/systemlogs", {
+                        params: params,
+                        action: "rc_parameter_edited",
+                        data: {before: beforeData, after: parameter}
+                    });
                     return callback(updateErr);
                 });
-            }
-            else {
+            } else {
                 return callback(err);
             }
         });
@@ -420,10 +461,10 @@ const {validateUserForWrite} = require("../../../api/utils/rights");
      * @param  {Function} callback - callback function
      */
     function insertParameter(params, collectionName, parameter, callback) {
-        common.outDb.collection(collectionName).insert(parameter, function(err, result) {
+        common.outDb.collection(collectionName).insert(parameter, function (err, result) {
             if (!err && result && result.insertedIds && result.insertedIds[0]) {
                 var parameterId = result.insertedIds[0];
-                plugins.dispatch("/systemlogs", { params: params, action: "rc_parameter_created", data: parameter });
+                plugins.dispatch("/systemlogs", {params: params, action: "rc_parameter_created", data: parameter});
                 return callback(err, parameterId);
             }
             return callback(err);
@@ -438,11 +479,15 @@ const {validateUserForWrite} = require("../../../api/utils/rights");
         var appId = params.qstring.app_id;
         var parameterId = params.qstring.parameter_id;
         var collectionName = "remoteconfig_parameters" + appId;
-        common.outDb.collection(collectionName).findOne({"_id": common.outDb.ObjectID(parameterId)}, function(err, parameter) {
+        common.outDb.collection(collectionName).findOne({"_id": common.outDb.ObjectID(parameterId)}, function (err, parameter) {
             if (!err) {
-                common.outDb.collection(collectionName).remove({_id: common.outDb.ObjectID(parameterId)}, function(removeErr) {
+                common.outDb.collection(collectionName).remove({_id: common.outDb.ObjectID(parameterId)}, function (removeErr) {
                     if (!removeErr) {
-                        plugins.dispatch("/systemlogs", {params: params, action: "rc_parameter_removed", data: parameter});
+                        plugins.dispatch("/systemlogs", {
+                            params: params,
+                            action: "rc_parameter_removed",
+                            data: parameter
+                        });
                         return common.returnMessage(params, 200, 'Success');
                     }
 
@@ -463,8 +508,7 @@ const {validateUserForWrite} = require("../../../api/utils/rights");
 
         try {
             condition = JSON.parse(params.qstring.condition);
-        }
-        catch (SyntaxError) {
+        } catch (SyntaxError) {
             console.log('Parse condition failed: ', params.qstring.condition);
         }
 
@@ -497,7 +541,7 @@ const {validateUserForWrite} = require("../../../api/utils/rights");
             insertCondition.bind(null)
         ];
 
-        async.series(asyncTasks, function(err, result) {
+        async.series(asyncTasks, function (err, result) {
             if (err) {
                 var message = 'Failed to add condition';
                 if (err.exists) {
@@ -525,7 +569,7 @@ const {validateUserForWrite} = require("../../../api/utils/rights");
             if (condition._id && typeof condition._id === typeof '') {
                 condition._id = common.db.ObjectID(condition._id);
             }
-            common.outDb.collection(collectionName).insert(condition, function(err, result) {
+            common.outDb.collection(collectionName).insert(condition, function (err, result) {
                 if (!err && result && result.insertedIds && result.insertedIds[0]) {
                     var conditionId = result.insertedIds[0];
                     plugins.dispatch("/systemlogs", {params: params, action: "rc_condition_created", data: condition});
@@ -549,7 +593,10 @@ const {validateUserForWrite} = require("../../../api/utils/rights");
         if (expception) {
             expception = common.outDb.ObjectID(expception);
         }
-        common.outDb.collection(collectionName).findOne({parameter_key: parameterKey, _id: { $ne: expception }}, function(err, res) {
+        common.outDb.collection(collectionName).findOne({
+            parameter_key: parameterKey,
+            _id: {$ne: expception}
+        }, function (err, res) {
             if (err || res) {
                 err = err || new Error("The parameter already exists");
                 if (res) {
@@ -570,7 +617,7 @@ const {validateUserForWrite} = require("../../../api/utils/rights");
      */
     function checkMaximumParameterLimit(appId, maximumParams, callback) {
         var collectionName = "remoteconfig_parameters" + appId;
-        common.outDb.collection(collectionName).estimatedDocumentCount(function(err, count) {
+        common.outDb.collection(collectionName).estimatedDocumentCount(function (err, count) {
             if (err || count >= maximumParams) {
                 err = err || new Error("Maximum parameters limit reached");
                 return callback(err);
@@ -609,7 +656,10 @@ const {validateUserForWrite} = require("../../../api/utils/rights");
             expception = common.outDb.ObjectID(expception);
         }
 
-        common.outDb.collection(collectionName).findOne({condition_name: conditionName, _id: { $ne: expception }}, function(err, res) {
+        common.outDb.collection(collectionName).findOne({
+            condition_name: conditionName,
+            _id: {$ne: expception}
+        }, function (err, res) {
             if (err || res) {
                 err = err || new Error("The condition already exists");
                 if (res) {
@@ -632,8 +682,7 @@ const {validateUserForWrite} = require("../../../api/utils/rights");
 
         try {
             condition = JSON.parse(params.qstring.condition);
-        }
-        catch (SyntaxError) {
+        } catch (SyntaxError) {
             console.log('Parse condition failed: ', params.qstring.condition);
         }
 
@@ -659,7 +708,7 @@ const {validateUserForWrite} = require("../../../api/utils/rights");
             updateConditionInDb.bind(null)
         ];
 
-        async.series(asyncTasks, function(err) {
+        async.series(asyncTasks, function (err) {
             if (err) {
                 var message = 'Failed to update condition';
                 if (err.exists) {
@@ -677,9 +726,13 @@ const {validateUserForWrite} = require("../../../api/utils/rights");
          */
         function updateConditionInDb(callback) {
             var collectionName = "remoteconfig_conditions" + appId;
-            common.outDb.collection(collectionName).findOne({_id: common.outDb.ObjectID(conditionId)}, function(err, beforeData) {
-                common.outDb.collection(collectionName).update({_id: common.outDb.ObjectID(conditionId)}, {$set: condition}, function(updateErr) {
-                    plugins.dispatch("/systemlogs", {params: params, action: "rc_condition_edited", data: {before: beforeData, after: condition} });
+            common.outDb.collection(collectionName).findOne({_id: common.outDb.ObjectID(conditionId)}, function (err, beforeData) {
+                common.outDb.collection(collectionName).update({_id: common.outDb.ObjectID(conditionId)}, {$set: condition}, function (updateErr) {
+                    plugins.dispatch("/systemlogs", {
+                        params: params,
+                        action: "rc_condition_edited",
+                        data: {before: beforeData, after: condition}
+                    });
                     return callback(updateErr);
                 });
             });
@@ -699,7 +752,7 @@ const {validateUserForWrite} = require("../../../api/utils/rights");
             removeConditionFromParameters.bind(null, conditionId)
         ];
 
-        async.parallel(asyncTasks, function(err) {
+        async.parallel(asyncTasks, function (err) {
             if (!err) {
                 return common.returnMessage(params, 200, 'Success');
             }
@@ -714,8 +767,8 @@ const {validateUserForWrite} = require("../../../api/utils/rights");
          */
         function removeConditionFromConditions(cId, callback) {
             var collectionName = "remoteconfig_conditions" + appId;
-            common.outDb.collection(collectionName).findOne({_id: common.outDb.ObjectID(cId)}, function(err, condition) {
-                common.outDb.collection(collectionName).remove({_id: common.outDb.ObjectID(cId)}, function(removeErr) {
+            common.outDb.collection(collectionName).findOne({_id: common.outDb.ObjectID(cId)}, function (err, condition) {
+                common.outDb.collection(collectionName).remove({_id: common.outDb.ObjectID(cId)}, function (removeErr) {
                     plugins.dispatch("/systemlogs", {params: params, action: "rc_condition_removed", data: condition});
                     return callback(removeErr);
                 });
@@ -729,8 +782,8 @@ const {validateUserForWrite} = require("../../../api/utils/rights");
          */
         function removeConditionFromParameters(condId, callback) {
             var collectionName = "remoteconfig_parameters" + appId;
-            common.outDb.collection(collectionName).findOne({_id: common.outDb.ObjectID(condId)}, function(err, condition) {
-                common.outDb.collection(collectionName).update({}, {$pull: {conditions: {condition_id: condId}}}, {multi: true}, function(updateErr) {
+            common.outDb.collection(collectionName).findOne({_id: common.outDb.ObjectID(condId)}, function (err, condition) {
+                common.outDb.collection(collectionName).update({}, {$pull: {conditions: {condition_id: condId}}}, {multi: true}, function (updateErr) {
                     plugins.dispatch("/systemlogs", {params: params, action: "rc_condition_removed", data: condition});
                     return callback(updateErr);
                 });
@@ -748,7 +801,7 @@ const {validateUserForWrite} = require("../../../api/utils/rights");
         var collectionName = "remoteconfig_parameters" + appId;
         var criteria = params.parameter_criteria || {};
 
-        common.outDb.collection(collectionName).find(criteria).toArray(function(err, result) {
+        common.outDb.collection(collectionName).find(criteria).toArray(function (err, result) {
             if (err) {
                 return callback(err);
             }
@@ -763,7 +816,7 @@ const {validateUserForWrite} = require("../../../api/utils/rights");
      * @param  {Function} callback - callback function
      */
     function fetchParametersFromAB(params, callback) {
-        plugins.dispatch("/ab/parameters", { params: params }, function() {
+        plugins.dispatch("/ab/parameters", {params: params}, function () {
             var abParameters = params.ab_parameters || [];
             return callback(null, abParameters);
         });
@@ -779,7 +832,7 @@ const {validateUserForWrite} = require("../../../api/utils/rights");
         var collectionName = "remoteconfig_conditions" + appId;
         var criteria = params.condition_criteria || {};
 
-        common.outDb.collection(collectionName).find(criteria).toArray(function(err, result) {
+        common.outDb.collection(collectionName).find(criteria).toArray(function (err, result) {
             if (err) {
                 return callback(err);
             }
@@ -797,8 +850,7 @@ const {validateUserForWrite} = require("../../../api/utils/rights");
 
         try {
             parameter.default_value = JSON.parse(parameter.default_value);
-        }
-        catch (e) {
+        } catch (e) {
             //Error
         }
 
@@ -811,8 +863,7 @@ const {validateUserForWrite} = require("../../../api/utils/rights");
         for (let i = 0; i < parameter.conditions.length; i++) {
             try {
                 parameter.conditions[i].value = JSON.parse(parameter.conditions[i].value);
-            }
-            catch (e) {
+            } catch (e) {
                 //Error
             }
 
@@ -820,28 +871,27 @@ const {validateUserForWrite} = require("../../../api/utils/rights");
         }
     }
 
-    plugins.register("/export", async function({app_id, plugin, selectedIds, params}) {
+    plugins.register("/export", async function ({app_id, plugin, selectedIds, params}) {
         if (plugin === "remote-config") {
             const data = await exportPlugin(app_id, selectedIds, params);
             return data;
         }
     });
 
-    plugins.register("/import", async function({params, importData}) {
+    plugins.register("/import", async function ({params, importData}) {
         let parameters = [];
         let conditions = [];
         if (importData.name.startsWith('remote-config')) {
             if (importData.name === 'remote-config') {
                 parameters.push(importData.data);
-                parameters.forEach(p=>{
+                parameters.forEach(p => {
                     params.internal = true;
                     params.qstring.parameter = JSON.stringify(p);
                     addParameter(params);
                 });
-            }
-            else if (importData.name === 'remote-config.conditions') {
+            } else if (importData.name === 'remote-config.conditions') {
                 conditions.push(importData.data);
-                conditions.forEach(c=>{
+                conditions.forEach(c => {
                     params.internal = true;
                     params.qstring.condition = JSON.stringify(c);
                     addCondition(params);
@@ -851,22 +901,21 @@ const {validateUserForWrite} = require("../../../api/utils/rights");
         return false;
     });
 
-    plugins.register("/import/validate", function({params, pluginData, pluginName}) {
+    plugins.register("/import/validate", function ({params, pluginData, pluginName}) {
         if (pluginName.startsWith('remote-config')) {
             return validateImport(params, pluginData);
-        }
-        else {
+        } else {
             return false;
         }
     });
 
     /**
      * Validation before import
-     * 
-     * @param {Object} params params object 
+     *
+     * @param {Object} params params object
      * @param {Object} config config Object
      * @returns {Promise<Object>} validation result
-    */
+     */
     function validateImport(params, config) {
         return {
             code: 200,
@@ -879,7 +928,7 @@ const {validateUserForWrite} = require("../../../api/utils/rights");
     }
 
     /**
-     * 
+     *
      * @param {*} app_id  app Id for collection name
      * @param {String[]} ids ids of documents to be exported
      * @param {Object<params>} params params object
@@ -887,32 +936,31 @@ const {validateUserForWrite} = require("../../../api/utils/rights");
     async function exportPlugin(app_id, ids, params) {
         const dependencies = [];
         const cohortIds = [];
-        const parameters = await common.outDb.collection("remoteconfig_parameters" + app_id).find({_id: {$in: ids.map(id => common.outDb.ObjectID(id)) } }).toArray();
+        const parameters = await common.outDb.collection("remoteconfig_parameters" + app_id).find({_id: {$in: ids.map(id => common.outDb.ObjectID(id))}}).toArray();
         const conditionIds = [];
 
-        parameters.forEach((parameter) =>{
-            parameter.conditions.forEach((cond)=>{
+        parameters.forEach((parameter) => {
+            parameter.conditions.forEach((cond) => {
                 conditionIds.push(common.outDb.ObjectID(cond.condition_id));
             });
         });
 
         const conditions = await common.outDb.collection("remoteconfig_conditions" + app_id).find({_id: {$in: conditionIds}}).toArray();
-        parameters.forEach((parameter) =>{
-            parameter.conditions.forEach((cond)=>{
+        parameters.forEach((parameter) => {
+            parameter.conditions.forEach((cond) => {
                 conditionIds.push(common.outDb.ObjectID(cond.condition_id));
             });
         });
 
-        conditions.forEach(cond =>{
+        conditions.forEach(cond => {
             try {
                 let condition = JSON.parse(cond.condition);
-                Object.keys(condition).forEach(k=>{
+                Object.keys(condition).forEach(k => {
                     if (k.startsWith('chr.')) {
                         cohortIds.push(k.split("chr.")[1]);
                     }
                 });
-            }
-            catch (e) {
+            } catch (e) {
                 // ignore
             }
         });

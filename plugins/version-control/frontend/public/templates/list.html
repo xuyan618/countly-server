@@ -31,10 +31,13 @@
                         </Row>
                         <Row>
                             <Col span="24" style="text-align: right;bottom: 10px">
-                            <Button type="default" icon="md-add" style="margin-right: 14px" v-on:click="toCreatePage">添加
+                            <Button type="default" icon="add" style="margin-right: 14px" v-on:click="toIOSPage">添加
+                                iOS 版本
+                            </Button>
+                            <Button type="default" icon="add" style="margin-right: 14px" v-on:click="toAndroidPage">添加
                                 Android 版本
                             </Button>
-<!--                            <Button type="primary" icon="md-search" @click="searchAndroids">搜索</Button>-->
+                            <Button type="primary" icon="search" @click="searchVersions">搜索</Button>
                             </Col>
                         </Row>
                     </Form>
@@ -72,7 +75,7 @@
                 </Form>
                 <div slot="footer"></div>
             </Modal>
-            <Spin size="large" fix v-if="inLoading"></Spin>
+            <Spin size="large" fix v-if="isLoading"></Spin>
         </div>
     </template>
 </div>

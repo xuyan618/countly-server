@@ -2,7 +2,6 @@
 
 (function (countVersionControl) {
 
-
     countVersionControl.factory = {
         getEditFormEmpty: function (fields) {
             fields = fields || {};
@@ -10,10 +9,12 @@
                 _id: null,
                 appVersion: '1.0.1.1',
                 allowLowestVersion: '1.0.1.0',
-                updateType: 0,
+                updateType: 1,
                 versionDescription: '布范围全量发布布范围全量发布',
                 grayReleased: 0,
-                staticServerUrl: 'http://www.baidu.com'
+                staticServerUrl: 'http://www.baidu.com',
+                channel: 'official',
+                versionStatus: 0
             };
             return _.extend(original, fields);
         },
@@ -28,17 +29,20 @@
                     updateType: "",
                     appVersion: "",
                     versionStatus: "",
-                }
+                },
+                isLoading: false,///网络请求状态
             };
         };
 
         var getters = {
-
             versionTableData: function (state) {
                 return state.versionTableData;
             },
             queryParams: function (state) {
                 return state.queryParams;
+            },
+            isLoading: function (state) {
+                return state.isLoading;
             }
         };
 
@@ -47,10 +51,10 @@
                 context.dispatch("refresh");
             },
             refresh: function (context) {
-                context.dispatch("countVersionControl/myRecords/fetchAll", null, {root: true});
                 context.dispatch("versionTableData");
             },
             versionTableData: function (context) {
+                context.commit("setIsLoading", true);
                 return $.when($.ajax({
                     type: "GET",
                     url: countlyCommon.API_URL + "/i/appversion",
@@ -60,6 +64,9 @@
                     }
                 })).then(function (obj) {
                     context.commit("setVersionTableData", obj);
+                    context.commit("setIsLoading", false);
+                }).catch(function () {
+                    context.commit("setIsLoading", false);
                 });
             }
         };
@@ -67,57 +74,13 @@
         var mutations = {
             setVersionTableData: function (state, val) {
                 state.versionTableData = val;
+            },
+            setIsLoading: function (state, vale) {
+                state.isLoading = vale;
             }
         };
 
         // Paged Resource
-        var tooManyRecordsResource = countlyVue.vuex.Module("tooManyRecords", {
-            resetFn: function () {
-                return {
-                    paged: {
-                        rows: []
-                    },
-                    requestParams: {}
-                };
-            },
-            getters: {
-                paged: function (state) {
-                    return state.paged;
-                }
-            },
-            mutations: {
-                setPaged: function (state, val) {
-                    state.paged = val;
-                },
-                setRequestParams: function (state, val) {
-                    state.requestParams = val;
-                }
-            },
-            actions: {
-                fetchPaged: function (context) {
-                    return $.when($.ajax({
-                        type: "GET",
-                        url: countlyCommon.API_URL + "/o",
-                        data: {
-                            app_id: countlyCommon.ACTIVE_APP_ID,
-                            method: 'large-col',
-                            table_params: JSON.stringify(context.state.requestParams)
-                        }
-                    }))
-                        .then(function (res) {
-                            context.commit("setPaged", res);
-                        })
-                        .catch(function () {
-                            context.commit("setPaged", {
-                                rows: [],
-                                totalRows: 0,
-                                notFilteredTotalRows: 0
-                            });
-                        });
-                }
-            }
-        });
-
         var recordsResource = countlyVue.vuex.Module("myRecords", {
             resetFn: function () {
                 return {
@@ -138,21 +101,23 @@
                 save: function (context, record) {
                     return $.when($.ajax({
                         type: "POST",
-                        url: countlyCommon.API_PARTS.data.w + "/appversion/save",
+                        url: countlyCommon.API_PARTS.data.w + "/appversion",
                         data: {
                             app_id: countlyCommon.ACTIVE_APP_ID,
-                            record: JSON.stringify(record)
+                            record: JSON.stringify(record),
+                            method: "save"
                         },
                         dataType: "json"
-                    }));
+                    }))
                 },
                 remove: function (context, id) {
                     return $.when($.ajax({
                         type: "GET",
-                        url: countlyCommon.API_PARTS.data.w + "/appversion/delete",
+                        url: countlyCommon.API_PARTS.data.w + "/appversion",
                         data: {
                             "app_id": countlyCommon.ACTIVE_APP_ID,
-                            "id": id
+                            "id": id,
+                            method: "delete"
                         },
                         dataType: "json"
                     }));
@@ -201,7 +166,7 @@
             getters: getters,
             actions: actions,
             mutations: mutations,
-            submodules: [recordsResource, tooManyRecordsResource]
+            submodules: [recordsResource]
         });
     };
 
