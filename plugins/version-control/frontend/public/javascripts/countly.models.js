@@ -56,7 +56,7 @@
             },
             versionTableData: function (context, query) {
                 query = query?query:{};
-                query.app_id = countlyCommon.ACTIVE_APP_ID;
+                query.app_id = countlyCommon.ACTIVE_APP_KEY;
                 query.method = 'get-all-versions';
                 return $.when($.ajax({
                     type: "GET",
@@ -73,7 +73,7 @@
                     type: "GET",
                     url: countlyCommon.API_URL + "/i/appchannel",
                     data: {
-                        app_id: countlyCommon.ACTIVE_APP_ID,
+                        app_id: countlyCommon.ACTIVE_APP_KEY,
                         method: 'get-all-channel'
                     }
                 })).then(function (obj) {
@@ -87,7 +87,7 @@
                     type: "GET",
                     url: countlyCommon.API_URL + "/i/appchannel",
                     data: {
-                        app_id: countlyCommon.ACTIVE_APP_ID,
+                        app_id: countlyCommon.ACTIVE_APP_KEY,
                         method: 'save',
                         record: JSON.stringify(record),
                     }
@@ -127,7 +127,7 @@
                         type: "POST",
                         url: countlyCommon.API_PARTS.data.w + "/appversion",
                         data: {
-                            app_id: countlyCommon.ACTIVE_APP_ID,
+                            app_id: countlyCommon.ACTIVE_APP_KEY,
                             record: JSON.stringify(record),
                             method: "save"
                         },
@@ -139,7 +139,7 @@
                         type: "GET",
                         url: countlyCommon.API_PARTS.data.w + "/appversion",
                         data: {
-                            "app_id": countlyCommon.ACTIVE_APP_ID,
+                            "app_id": countlyCommon.ACTIVE_APP_KEY,
                             "id": id,
                             method: "delete"
                         },
