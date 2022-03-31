@@ -20,6 +20,12 @@
                                     :label="type.label"/>
                         </Select>
                     </FormItem>
+                    <FormItem label="渠道类型" prop="channelCode">
+                        <Select v-model="editForm.channelCode">
+                            <Option v-for="type in channelCodes" :key="type.channelCode" :value="type.channelCode"
+                                    :label="type.channelDesc"/>
+                        </Select>
+                    </FormItem>
                     <FormItem label="发布范围" prop="grayReleased">
                         <RadioGroup v-model="editForm.grayReleased">
                             <Radio v-for="item in grayReleaseds" :disabled="item.disabled === true"
@@ -63,7 +69,7 @@
                         @on-ok="handleReset('editFormRule')">
                         <Button type="default" size="large" style="margin-right: 12px">重置</Button>
                     </Poptip>
-                    <Button type="primary" size="large" @click="handleSubmit('editFormRule')">提交</Button>
+                    <!--<Button type="primary" size="large" @click="handleFormSubmit('editFormRule')">提交</Button>-->
                     </Col>
                 </Row>
                 </Col>

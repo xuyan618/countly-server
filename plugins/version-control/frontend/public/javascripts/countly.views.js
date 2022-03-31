@@ -1,28 +1,35 @@
 /*global app, countlyVue, countlyVueExample, countlyGlobal, countlyCommon, validators, extendViewWithFilter */
 
-const versionStatus = [{
-    label: '未上架', value: 0
-}, {
-    label: '已上架', value: 1
-}];
-const updateTypes = [{
-    label: '强制更新', value: 0
-}, {
-    label: '一般更新', value: 1
-}, {
-    label: '静默更新', value: 2
-}, {
-    label: '可忽略更新', value: 3
-}, {
-    label: '静默可忽略更新', value: 4
-}];
-const grayReleaseds = [{
-    label: '全量发布', value: 0
-}, {
-    label: '白名单发布', value: 1, disabled: true
-}, {
-    label: 'IP发布', value: 2, disabled: true
-}];
+const versionStatus = [
+    {
+        label: '未上架', value: 0
+    }, {
+        label: '已上架', value: 1
+    }];
+const updateTypes = [
+    {
+        label: '强制更新', value: 0
+    },
+    {
+        label: '一般更新', value: 1
+    },
+    {
+        label: '静默更新', value: 2
+    },
+    {
+        label: '可忽略更新', value: 3
+    },
+    {
+        label: '静默可忽略更新', value: 4
+    }];
+const grayReleaseds = [
+    {
+        label: '全量发布', value: 0
+    }, {
+        label: '白名单发布', value: 1, disabled: true
+    }, {
+        label: 'IP发布', value: 2, disabled: true
+    }];
 
 var VersionsView = countlyVue.views.BaseView.extend({
     template: '#version-control-list-template',
@@ -91,7 +98,7 @@ var VersionsView = countlyVue.views.BaseView.extend({
                 },
                 {
                     title: '渠道', width: 80, render: (h, params) => {
-                        return h('div', this.channelTypeFilter(params.row.channel));
+                        return h('div', this.channelTypeFilter(params.row.channelCode));
                     }
                 },
                 {
@@ -231,9 +238,6 @@ var VersionsView = countlyVue.views.BaseView.extend({
                             }, '删除')])]);
                     }
                 }], // search
-            queryParams: {
-                appVersion: '', updateType: null, versionStatus: null
-            },
             versionStatus,
             inTwoConfirm: false,
             twoConfirm: {
@@ -263,7 +267,23 @@ var VersionsView = countlyVue.views.BaseView.extend({
             return this.$store.getters["countlyVersionControl/queryParams"];
         },
         isLoading() {
-            return this.$store.getters["countlyVersionControl/isLoading"];
+            return false;
+        },
+        channelData: function () {
+            return this.$store.getters["countlyVersionControl/channelData"];
+        },
+        channelTypeFilter: function () {
+            return function (channelCode) {
+                if (channelCode === null || this.channelData === null || this.channelData.length === 0) return '未知';
+                let targetDesc = "未知:" + channelCode;
+                for (const channelCodeKey in this.channelData) {
+                    if (this.channelData[channelCodeKey].channelCode === channelCode) {
+                        targetDesc = this.channelData[channelCodeKey].channelDesc;
+                        break;
+                    }
+                }
+                return targetDesc
+            }
         }
     },
     created() {
@@ -282,9 +302,12 @@ var VersionsView = countlyVue.views.BaseView.extend({
             console.log("定制更新机制");
             // this.getVersions();
         },
+
         getVersions() {
-            this.$store.dispatch("countlyVersionControl/versionTableData");
+            this.$store.dispatch("countlyVersionControl/versionTableData", this.queryParams);
+            this.$store.dispatch("countlyVersionControl/channelData");
         },
+
         async delIOS(params) {
             this.$store.dispatch("countlyVersionControl/myRecords/remove", params).then((response) => {
                 response = JSON.parse(response);
@@ -292,6 +315,7 @@ var VersionsView = countlyVue.views.BaseView.extend({
                     this.$Notice.success({
                         title: '请求成功', desc: response.message
                     });
+                    this.getVersions();
                 } else {
                     this.$Notice.error({
                         title: '请求成功', desc: response.message
@@ -310,6 +334,7 @@ var VersionsView = countlyVue.views.BaseView.extend({
                     this.$Notice.success({
                         title: '请求成功', desc: response.message
                     });
+                    this.getVersions();
                 } else {
                     this.$Notice.error({
                         title: '请求失败', desc: response.message
@@ -356,28 +381,28 @@ var VersionsView = countlyVue.views.BaseView.extend({
             return word;
         },
 
-        channelTypeFilter(channel) {
-            if (channel === null) return '未知';
-            let channelStr = "渠道"
-            switch (channel) {
-                case "official":
-                    channelStr = "官方"
-                    break;
-                case "360":
-                    channelStr = "360"
-                    break
-                case "xiaomi":
-                    channelStr = "小米"
-                    break
-                case "huawei":
-                    channelStr = "华为"
-                    break
-                case "yingyongbao":
-                    channelStr = "应用宝"
-                    break
-            }
-            return channelStr;
-        },
+        // channelTypeFilter(channel) {
+        //
+        //     let channelStr = "渠道"
+        //     switch (channel) {
+        //         case "official":
+        //             channelStr = "官方"
+        //             break;
+        //         case "360":
+        //             channelStr = "360"
+        //             break
+        //         case "xiaomi":
+        //             channelStr = "小米"
+        //             break
+        //         case "huawei":
+        //             channelStr = "华为"
+        //             break
+        //         case "yingyongbao":
+        //             channelStr = "应用宝"
+        //             break
+        //     }
+        //     return channelStr;
+        // },
 
         updateTypeFilter(num) {
             if (isNaN(num)) return '一般更新';
@@ -448,6 +473,9 @@ var VersionEditView = countlyVue.views.BaseView.extend({
                 // "step1": !(this.$v.editedObject.name.$invalid || this.$v.editedObject.field1.$invalid || this.$v.editedObject.field2.$invalid),
                 // "step3": !(this.$v.editedObject.selectedProps.$invalid)
             };
+        },
+        channelCodes: function () {
+            return this.$store.getters["countlyVersionControl/channelData"];
         }
     },
 
@@ -483,6 +511,7 @@ var VersionEditView = countlyVue.views.BaseView.extend({
                     trigger: 'blur'
                 }, {required: true, validator: validateInput, trigger: 'blur'}],
                 updateType: [{type: 'number', required: true, message: '请选择更新类型', trigger: 'change'}],
+                channelCode: [{type: 'string', required: true, message: '请选择渠道', trigger: 'change'}],
                 versionDescription: [{required: true, message: '请输入版本描述内容', trigger: 'blur'}, {
                     required: true, validator: validateInput, trigger: 'blur'
                 }],
@@ -512,6 +541,10 @@ var VersionEditView = countlyVue.views.BaseView.extend({
         }
     },
     methods: {
+        created() {
+            this.$store.dispatch("countlyVersionControl/channelData");
+        },
+
         beforeLeavingStep: function () {
             if (this.currentStepId === "step1") {
                 [this.$v.editedObject.appVersion, this.$v.editedObject.allowLowestVersion, this.$v.editedObject.versionDescription].forEach(function (validator) {
@@ -520,8 +553,10 @@ var VersionEditView = countlyVue.views.BaseView.extend({
             } else if (this.currentStepId === "step3") {
                 this.$v.editedObject.selectedProps.$touch();
             }
-        }, handleFormSubmit: function (editForm) {
-            // handleSubmit('editFormRule')
+        },
+        handleReset: function (name) {
+            console.log('清空数据')
+            this.$refs[name].resetFields();
         }
     }, // validations: this.editFormRule
 });
@@ -551,18 +586,12 @@ var VersionDrawer = countlyVue.components.BaseDrawer.extend({
 
 var ChannelDrawer = countlyVue.components.BaseDrawer.extend({
 
-    computed: {
-        stepValidations: function () {
-            return {
-                "step1": !(this.$v.editedObject.channelCode.$invalid || this.$v.editedObject.channelDesc.$invalid),
-            };
-        }
-    },
+    computed: {},
+
     data: function () {
-        return {
-            editedChanelObject:null
-        };
+        return {}
     },
+
     methods: {
 
         afterObjectCopy: function (newState) {
@@ -572,11 +601,20 @@ var ChannelDrawer = countlyVue.components.BaseDrawer.extend({
                 this.title = "新增渠道";
             }
             this.saveButtonLabel = "保存";
-            this.editedChanelObject = newState;
+            this.$store.dispatch("countlyVersionControl/channelData");
             return newState;
         }
     },
-    validations: {}
+    validations: {
+        editedObject: {
+            channelCode: {
+                required: validators.required
+            },
+            channelDesc: {
+                required: validators.required
+            }
+        }
+    }
 });
 
 var MainView = countlyVue.views.BaseView.extend({
@@ -588,11 +626,38 @@ var MainView = countlyVue.views.BaseView.extend({
         "channel-drawer": ChannelDrawer,
         "edit-view": VersionEditView
     },
+    computed: {
+        channelTableList: function () {
+            // return [{},{}]
+            return this.$store.getters["countlyVersionControl/channelData"];
+        }
+    },
     data() {
-        return {};
+        return {
+            channelColumns: [
+                {
+                    type: 'index', fixed: 'left', width: 50
+                },
+                {
+                    title: '渠道编码', width: 100, fixed: 'left', render: (h, params) => {
+                        return h('div', params.row.channelCode);
+                    }
+                },
+                {
+                    title: '渠道描述', width: 120, render: (h, params) => {
+                        return h('div', params.row.channelDesc);
+                    }
+                }
+            ],
+            // search
+            // channelTableList:[
+            //     {channelCode:"测试",channelDesc:"渠道测试"}
+            // ]
+        };
     },
     created() {
         // this.getAndroids();
+        this.$store.dispatch("countlyVersionControl/channelData");
     },
     methods: {
         onDrawerSubmit: function (doc) {
@@ -614,12 +679,21 @@ var MainView = countlyVue.views.BaseView.extend({
         },
         onChannelDrawerSubmit: function (channel) {
             console.log('提交渠道按钮', channel);
+            this.$store.dispatch("countlyVersionControl/saveChannel", channel).then(response => {
+                response = JSON.parse(response);
 
+                if (response.code === 10000) {
+                    this.$Notice.success({
+                        title: '请求成功', desc: response.message
+                    });
+                    this.$store.dispatch("countlyVersionControl/channelData");
+                } else {
+                    this.$Notice.error({
+                        title: '请求失败', desc: response.message
+                    });
+                }
+            });
         }
-    },
-
-    watch: {
-        'currentPage': 'getAndroids'
     },
 
     beforeCreate: function () {

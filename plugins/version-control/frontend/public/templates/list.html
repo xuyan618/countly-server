@@ -7,12 +7,22 @@
                 <div class="form">
                     <Form v-model="queryParams" :label-width="80">
                         <Row>
-                            <Col span="8">
+                            <Col span="4">
                             <FormItem label="版本号">
                                 <Input v-model="queryParams.appVersion" placeholder=""/>
                             </FormItem>
                             </Col>
-                            <Col span="8">
+                            <Col span="4">
+                            <FormItem label="渠道">
+                                <Select v-model="queryParams.channelCode" filterable clearable>
+                                    <Option v-for="item in channelData" :value="item.channelCode"
+                                            :key="item.channelCode"
+                                            :label="item.channelDesc"/>
+                                </Select>
+                            </FormItem>
+                            </Col>
+
+                            <Col span="4">
                             <FormItem label="更新类型">
                                 <Select v-model="queryParams.updateType" filterable clearable>
                                     <Option v-for="item in updateTypes" :value="item.value" :key="item.value"
@@ -20,7 +30,7 @@
                                 </Select>
                             </FormItem>
                             </Col>
-                            <Col span="8">
+                            <Col span="4">
                             <FormItem label="上架状态">
                                 <Select v-model="queryParams.versionStatus" filterable clearable>
                                     <Option v-for="item in versionStatus" :value="item.value" :key="item.value"

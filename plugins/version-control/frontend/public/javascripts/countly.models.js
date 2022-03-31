@@ -13,8 +13,8 @@
                 versionDescription: '布范围全量发布布范围全量发布',
                 grayReleased: 0,
                 staticServerUrl: 'http://www.baidu.com',
-                channel: 'official',
-                versionStatus: 0
+                versionStatus: 0,
+                channelCode:'official'
             };
             return _.extend(original, fields);
         },
@@ -29,8 +29,9 @@
                     updateType: "",
                     appVersion: "",
                     versionStatus: "",
+                    channelCode:""
                 },
-                isLoading: false,///网络请求状态
+                channelData: [],///渠道数据
             };
         };
 
@@ -41,8 +42,8 @@
             queryParams: function (state) {
                 return state.queryParams;
             },
-            isLoading: function (state) {
-                return state.isLoading;
+            channelData:function (state) {
+                return state.channelData
             }
         };
 
@@ -53,21 +54,44 @@
             refresh: function (context) {
                 context.dispatch("versionTableData");
             },
-            versionTableData: function (context) {
-                context.commit("setIsLoading", true);
+            versionTableData: function (context, query) {
+                query = query?query:{};
+                query.app_id = countlyCommon.ACTIVE_APP_ID;
+                query.method = 'get-all-versions';
                 return $.when($.ajax({
                     type: "GET",
                     url: countlyCommon.API_URL + "/i/appversion",
-                    data: {
-                        app_id: countlyCommon.ACTIVE_APP_ID,
-                        method: 'get-all-versions'
-                    }
+                    data: query
                 })).then(function (obj) {
                     context.commit("setVersionTableData", obj);
-                    context.commit("setIsLoading", false);
                 }).catch(function () {
-                    context.commit("setIsLoading", false);
+                    context.commit("setVersionTableData", []);
                 });
+            },
+            channelData:function (context) {
+                return $.when($.ajax({
+                    type: "GET",
+                    url: countlyCommon.API_URL + "/i/appchannel",
+                    data: {
+                        app_id: countlyCommon.ACTIVE_APP_ID,
+                        method: 'get-all-channel'
+                    }
+                })).then(function (obj) {
+                    context.commit("setChannelData", obj);
+                }).catch(function () {
+                    context.commit("setChannelData", []);
+                });
+            },
+            saveChannel:function (context,record) {
+                return $.when($.ajax({
+                    type: "GET",
+                    url: countlyCommon.API_URL + "/i/appchannel",
+                    data: {
+                        app_id: countlyCommon.ACTIVE_APP_ID,
+                        method: 'save',
+                        record: JSON.stringify(record),
+                    }
+                }))
             }
         };
 
@@ -75,8 +99,8 @@
             setVersionTableData: function (state, val) {
                 state.versionTableData = val;
             },
-            setIsLoading: function (state, vale) {
-                state.isLoading = vale;
+            setChannelData:function (state, vale) {
+                state.channelData = vale;
             }
         };
 
@@ -121,42 +145,6 @@
                         },
                         dataType: "json"
                     }));
-                },
-                status: function (context, updates) {
-                    return $.when($.ajax({
-                        type: "GET",
-                        url: countlyCommon.API_PARTS.data.w + "/vue_example/status",
-                        data: {
-                            "app_id": countlyCommon.ACTIVE_APP_ID,
-                            "records": JSON.stringify(updates)
-                        },
-                        dataType: "json"
-                    }));
-                },
-                fetchAll: function (context) {
-                    return $.when($.ajax({
-                        type: "GET",
-                        url: countlyCommon.API_URL + "/o",
-                        data: {
-                            app_id: countlyCommon.ACTIVE_APP_ID,
-                            method: 'vue-records'
-                        }
-                    })).then(function (res) {
-                        context.commit("setAll", res);
-                    });
-                },
-                fetchSingle: function (context, id) {
-                    return $.when($.ajax({
-                        type: "GET",
-                        url: countlyCommon.API_URL + "/o",
-                        data: {
-                            app_id: countlyCommon.ACTIVE_APP_ID,
-                            method: 'vue-records',
-                            id: id
-                        }
-                    })).then(function (records) {
-                        return records[0];
-                    });
                 }
             }
         });

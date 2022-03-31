@@ -5,7 +5,7 @@
         @close="closeDrawer"
         @submit="onDrawerSubmit"
         v-bind="drawers.version">
-        <template slot-scope="drawerScope" slot="default" >
+        <template slot-scope="drawerScope" slot="default">
             <edit-view ref="editView" id="mainSidecar" role="sidecar">
             </edit-view>
         </template>
@@ -25,27 +25,26 @@
                         <div class="panel-body">
                             <div class="label">渠道编码</div>
                             <div>
-                                <cly-text-field v-model="drawerScope.$v.editedChanelObject.channelCode"
-                                                placeholder="Some required value"></cly-text-field>
-<!--                                <div class="validation-error" v-if="!editedChanelObject.channelCode">请输入编码-->
+                                <cly-text-field v-model="drawerScope.$v.editedObject.channelCode.$model"
+                                                placeholder="请输入编码"></cly-text-field>
+                                <div class="validation-error" v-if="drawerScope.$v.editedObject.channelCode.$anyError">请输入编码
                                 </div>
-                            </div>
-                            <br>
-                            <div class="label">渠道描述</div>
-                            <div>
-                                <cly-text-field v-model="drawerScope.$v.editedChanelObject.channelDesc"
-                                                placeholder="Some required value"></cly-text-field>
-<!--                                <div class="validation-error" v-if="!editedChanelObject.channelDesc">请输入描述-->
+                                <br>
+                                <div class="label">渠道描述</div>
+                                <div>
+                                    <cly-text-field v-model="drawerScope.$v.editedObject.channelDesc.$model"
+                                                    placeholder="请输入描述"></cly-text-field>
+                                    <div class="validation-error" v-if="drawerScope.$v.editedObject.channelDesc.$anyError">请输入描述
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                </div>
-                <div class="section">
-                    <pre>
-                        {{editedChanelObject}}
-                    </pre>
-                </div>
+
+                        <div class="section" style="margin-top: 10px">
+                            <div class="table-outer-container">
+                                <Table border :columns="channelColumns" :data="channelTableList"/>
+                            </div>
+                        </div>
             </cly-content>
         </template>
     </channel-drawer>
