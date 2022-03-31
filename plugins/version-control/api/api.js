@@ -237,7 +237,7 @@ const {validateUserForWrite} = require("../../../api/utils/rights");
 
         for (let i = 0; i < apps.length; i++) {
             let appMap = apps[i];
-            versionquery.appid = appMap.key;
+            versionquery.appid = appMap._id.toString();
             let appResponse = {};
             appResponse.id = appMap.key;
             appResponse.name = appMap.name;
