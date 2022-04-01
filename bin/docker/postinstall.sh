@@ -28,6 +28,6 @@ else
 	  fi
 	done <<< "$a"
 
-	(cd /opt/countly && npx grunt dist-all)
+	(cd /opt/countly && npx grunt dist-all --force)
 
 fi

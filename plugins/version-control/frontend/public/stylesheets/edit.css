@@ -1,0 +1,47 @@
+#version-android-edit .edit_card:after {
+  content: " ";
+  display: block;
+  height: 100%;
+  width: 1px;
+  background-color: #eeeeee;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 66.66666667%;
+}
+#version-android-edit .edit_card {
+  width: 800px;
+}
+#version-android-edit .detailed_list ul, #version-android-edit .detailed_list li {
+  list-style: none;
+}
+#version-android-edit .detailed_list ul li {
+  color: #777;
+}
+#version-android-edit .detailed_list ul li span {
+  font-weight: bold;
+  font-size: 14px;
+  line-height: 2;
+  display: inline-block;
+  width: 100px;
+  margin-right: 12px;
+  text-align: right;
+  color: #333;
+}
+#version-android-edit .detailed_list pre {
+  overflow: auto;
+  min-height: 100px;
+  margin-left: 112px;
+  margin-top: -20px;
+}
+#version-android-edit .detailed_title {
+  font-size: 16px;
+  font-weight: bold;
+  margin-bottom: 20px;
+}
+#version-android-edit .footer {
+  margin-top: 24px;
+  text-align: right;
+}
+
+/*# sourceMappingURL=edit.css.map */
