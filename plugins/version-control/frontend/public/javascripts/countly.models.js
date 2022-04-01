@@ -158,4 +158,4 @@
         });
     };
 
-})(window.countlyVersionControl = window.countlyVersionControl || {});
+})(window.countlyVersionControl = window.countlyVersionControl || {})
