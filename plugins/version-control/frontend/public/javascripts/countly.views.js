@@ -684,7 +684,7 @@ var MainView = countlyVue.views.BaseView.extend({
                 });
             });
         },
-        
+
         onChannelDrawerSubmit: function (channel) {
             console.log('提交渠道按钮', channel);
             this.$store.dispatch("countlyVersionControl/saveChannel", channel).then(response => {
