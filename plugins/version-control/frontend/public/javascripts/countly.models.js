@@ -7,12 +7,12 @@
             fields = fields || {};
             var original = {
                 _id: null,
-                appVersion: '1.0.1.1',
-                allowLowestVersion: '1.0.1.0',
+                appVersion: '',
+                allowLowestVersion: '',
                 updateType: 1,
-                versionDescription: '布范围全量发布布范围全量发布',
+                versionDescription: '',
                 grayReleased: 0,
-                staticServerUrl: 'http://www.baidu.com',
+                staticServerUrl: '',
                 versionStatus: 0,
                 channelCode:'official'
             };

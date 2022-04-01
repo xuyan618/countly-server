@@ -662,21 +662,29 @@ var MainView = countlyVue.views.BaseView.extend({
     methods: {
         onDrawerSubmit: function (doc) {
             console.log('提交版本按钮', doc);
-            this.$store.dispatch("countlyVersionControl/myRecords/save", doc).then(response => {
-                response = JSON.parse(response);
 
-                if (response.code === 10000) {
-                    this.$Notice.success({
-                        title: '请求成功', desc: response.message
-                    });
-                    this.$store.dispatch("countlyVersionControl/versionTableData");
-                } else {
-                    this.$Notice.error({
-                        title: '请求失败', desc: response.message
-                    });
+            this.$refs.editView.$refs.editFormRule.validate((valid) => {
+                if (!valid) {
+                    this.$Message.error('请先完成所有必填项内容!');
+                    return false;
                 }
+                this.$store.dispatch("countlyVersionControl/myRecords/save", doc).then(response => {
+                    response = JSON.parse(response);
+
+                    if (response.code === 10000) {
+                        this.$Notice.success({
+                            title: '请求成功', desc: response.message
+                        });
+                        this.$store.dispatch("countlyVersionControl/versionTableData");
+                    } else {
+                        this.$Notice.error({
+                            title: '请求失败', desc: response.message
+                        });
+                    }
+                });
             });
         },
+        
         onChannelDrawerSubmit: function (channel) {
             console.log('提交渠道按钮', channel);
             this.$store.dispatch("countlyVersionControl/saveChannel", channel).then(response => {
