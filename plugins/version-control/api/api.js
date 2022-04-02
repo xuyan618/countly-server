@@ -1,4 +1,3 @@
-require('./parts/rc');
 var pluginOb = {},
     plugins = require('../../pluginManager.js'),
     common = require('../../../api/utils/common.js'),
