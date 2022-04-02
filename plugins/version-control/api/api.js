@@ -13,7 +13,7 @@ const {validateUserForWrite} = require("../../../api/utils/rights");
         var params = ob.params;
 
         if (params.qstring.method === "get-all-versions") {
-            log.d("获取版本信息:", params.qstring);
+            log.i("获取版本信息:", params.qstring);
 
             return new Promise(function (resolve, reject) {
                 // params.qstring.app_id = params.app_id;
@@ -44,7 +44,7 @@ const {validateUserForWrite} = require("../../../api/utils/rights");
                 return true;
             });
         } else if (params.qstring.method === "save") {
-            log.d("新增版本信息:", params.qstring);
+            log.i("新增版本信息:", params.qstring);
 
             validateUserForWrite(params, function (callBackResult) {
                 let record = params.qstring.record;
@@ -82,7 +82,7 @@ const {validateUserForWrite} = require("../../../api/utils/rights");
             });
             return true;
         } else if (params.qstring.method === "delete") {
-            log.d("删除版本信息:", params.qstring);
+            log.i("删除版本信息:", params.qstring);
             validateUserForWrite(params, function (callBackResult) {
                 let parameterId = params.qstring.id;
                 let collectionName = "app_version";
@@ -112,7 +112,7 @@ const {validateUserForWrite} = require("../../../api/utils/rights");
         var validateUserForDataReadAPI = ob.validateUserForDataReadAPI;
         var params = ob.params;
         if (params.qstring.method === "get-all-channel") {
-            log.d("获取渠道信息:", params.qstring);
+            log.i("获取渠道信息:", params.qstring);
 
             return new Promise(function (resolve, reject) {
                 // params.qstring.app_id = params.app_id;
@@ -130,7 +130,7 @@ const {validateUserForWrite} = require("../../../api/utils/rights");
                 return true;
             });
         } else if (params.qstring.method === "save") {
-            log.d("新增渠道信息:", params.qstring);
+            log.i("新增渠道信息:", params.qstring);
 
             validateUserForWrite(params, function (callBackResult) {
                 let record = params.qstring.record;
@@ -203,7 +203,7 @@ const {validateUserForWrite} = require("../../../api/utils/rights");
 
     plugins.register("/o/appversion", async function (ob) {
         var params = ob.params;
-        log.d("获取版本信息:", params.qstring);
+        log.i("获取版本信息:", params.qstring);
         let response = await queryAppVersion(params);
         common.returnOutput(params, response);
     });
