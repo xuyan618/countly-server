@@ -2,7 +2,8 @@ require('./parts/rc');
 var pluginOb = {},
     plugins = require('../../pluginManager.js'),
     common = require('../../../api/utils/common.js'),
-    async = require('async');
+    log = common.log('mgmt:apps');
+
 const {validateUserForWrite} = require("../../../api/utils/rights");
 
 (function () {
@@ -12,7 +13,7 @@ const {validateUserForWrite} = require("../../../api/utils/rights");
         var params = ob.params;
 
         if (params.qstring.method === "get-all-versions") {
-            console.log("获取版本信息:", params.qstring);
+            log.d("获取版本信息:", params.qstring);
 
             return new Promise(function (resolve, reject) {
                 // params.qstring.app_id = params.app_id;
@@ -43,7 +44,7 @@ const {validateUserForWrite} = require("../../../api/utils/rights");
                 return true;
             });
         } else if (params.qstring.method === "save") {
-            console.log("新增版本信息:", params.qstring);
+            log.d("新增版本信息:", params.qstring);
 
             validateUserForWrite(params, function (callBackResult) {
                 let record = params.qstring.record;
@@ -81,7 +82,7 @@ const {validateUserForWrite} = require("../../../api/utils/rights");
             });
             return true;
         } else if (params.qstring.method === "delete") {
-            console.log("删除版本信息:", params.qstring);
+            log.d("删除版本信息:", params.qstring);
             validateUserForWrite(params, function (callBackResult) {
                 let parameterId = params.qstring.id;
                 let collectionName = "app_version";
@@ -111,7 +112,7 @@ const {validateUserForWrite} = require("../../../api/utils/rights");
         var validateUserForDataReadAPI = ob.validateUserForDataReadAPI;
         var params = ob.params;
         if (params.qstring.method === "get-all-channel") {
-            console.log("获取渠道信息:", params.qstring);
+            log.d("获取渠道信息:", params.qstring);
 
             return new Promise(function (resolve, reject) {
                 // params.qstring.app_id = params.app_id;
@@ -129,7 +130,7 @@ const {validateUserForWrite} = require("../../../api/utils/rights");
                 return true;
             });
         } else if (params.qstring.method === "save") {
-            console.log("新增渠道信息:", params.qstring);
+            log.d("新增渠道信息:", params.qstring);
 
             validateUserForWrite(params, function (callBackResult) {
                 let record = params.qstring.record;
@@ -202,7 +203,7 @@ const {validateUserForWrite} = require("../../../api/utils/rights");
 
     plugins.register("/o/appversion", async function (ob) {
         var params = ob.params;
-        console.log("获取版本信息:", params.qstring);
+        log.d("获取版本信息:", params.qstring);
         let response = await queryAppVersion(params);
         common.returnOutput(params, response);
     });
@@ -260,69 +261,6 @@ const {validateUserForWrite} = require("../../../api/utils/rights");
             }
         }
         return JSON.stringify(response);
-    }
-
-    plugins.register("/export", async function ({app_id, plugin, selectedIds, params}) {
-        if (plugin === "remote-config") {
-            const data = await exportPlugin(app_id, selectedIds, params);
-            return data;
-        }
-    });
-
-
-    /**
-     *
-     * @param {*} app_id  app Id for collection name
-     * @param {String[]} ids ids of documents to be exported
-     * @param {Object<params>} params params object
-     */
-    async function exportPlugin(app_id, ids, params) {
-        const dependencies = [];
-        const cohortIds = [];
-        const parameters = await common.outDb.collection("remoteconfig_parameters" + app_id).find({_id: {$in: ids.map(id => common.outDb.ObjectID(id))}}).toArray();
-        const conditionIds = [];
-
-        parameters.forEach((parameter) => {
-            parameter.conditions.forEach((cond) => {
-                conditionIds.push(common.outDb.ObjectID(cond.condition_id));
-            });
-        });
-
-        const conditions = await common.outDb.collection("remoteconfig_conditions" + app_id).find({_id: {$in: conditionIds}}).toArray();
-        parameters.forEach((parameter) => {
-            parameter.conditions.forEach((cond) => {
-                conditionIds.push(common.outDb.ObjectID(cond.condition_id));
-            });
-        });
-
-        conditions.forEach(cond => {
-            try {
-                let condition = JSON.parse(cond.condition);
-                Object.keys(condition).forEach(k => {
-                    if (k.startsWith('chr.')) {
-                        cohortIds.push(k.split("chr.")[1]);
-                    }
-                });
-            } catch (e) {
-                // ignore
-            }
-        });
-
-        let cohortDependencies = await params.fetchDependencies(app_id, cohortIds, 'cohorts', params);
-        dependencies.push(...cohortDependencies);
-
-        return {
-            name: 'remote-config',
-            data: parameters,
-            dependencies: [
-                {
-                    name: 'remote-config.conditions',
-                    data: conditions,
-                    dependencies: []
-                },
-                ...dependencies
-            ]
-        };
     }
 
 }(pluginOb));
